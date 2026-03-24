@@ -7117,9 +7117,12 @@ Public Sub LoadSourceFile()
     Set ws = g_CurrentWorksheet
     If ws Is Nothing Then Set ws = ActiveSheet
 
-    ' Open the selected file and copy data
+    ' Open the selected file and read data directly into array
     Set sourceWB = Workbooks.Open(sourceFileName)
-    sourceWB.Worksheets(1).UsedRange.Copy
+    sourceData = sourceWB.Worksheets(1).UsedRange.Value
+    sourceLastRow = sourceWB.Worksheets(1).UsedRange.Rows.Count
+    sourceLastCol = sourceWB.Worksheets(1).UsedRange.Columns.Count
+    sourceWB.Close SaveChanges:=False
 
     ' Determine paste row
     If g_DataHeaderRow > 0 Then
@@ -7143,13 +7146,8 @@ Public Sub LoadSourceFile()
         Application.DisplayAlerts = True
     End If
 
-    ' Paste values only
-    ws.Cells(pasteRow, 1).PasteSpecial xlPasteValues
-    Application.CutCopyMode = False
-
-    ' Close source file without saving
-    sourceWB.Close SaveChanges:=False
-    On Error GoTo 0
+    ' Write array values directly
+    ws.Range(ws.Cells(pasteRow, 1), ws.Cells(pasteRow + sourceLastRow - 1, sourceLastCol)).Value = sourceData
 
     ' Reinitialize and rebuild UI
     g_DataHeaderRow = 0
