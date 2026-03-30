@@ -3230,6 +3230,7 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
 
     ' Check if UI already exists
     uiExists = IsUIAlreadyExists(ws)
+    MsgBox "RebuildMatchBuilderUI: uiExists=" & uiExists & " g_ForceRebuild=" & g_ForceRebuild & " gate=" & (uiExists And Not g_ForceRebuild), vbInformation, "DEBUG"
     DebugPrint "RebuildMatchBuilderUI: UI exists = " & uiExists
 
     ' SAFETY CHECK: If UI already exists, don't rebuild (unless force rebuild requested)
@@ -7094,7 +7095,8 @@ Public Sub LoadSourceFile()
     Dim sourceData As Variant
     Dim sourceLastRow As Long
     Dim sourceLastCol As Long
-
+    Dim lastMatchRuleRow As Long
+    Dim scanPasteRow As Long
     Application.ScreenUpdating = False
     On Error GoTo ErrorHandler
 
@@ -7124,11 +7126,19 @@ Public Sub LoadSourceFile()
     sourceLastCol = sourceWB.Worksheets(1).UsedRange.Columns.Count
     sourceWB.Close SaveChanges:=False
 
-    ' Determine paste row
-    If g_DataHeaderRow > 0 Then
-        pasteRow = g_DataHeaderRow
+    ' Scan from UI_FIRST_MATCH_ROW (row 5) to row 50 for last UI match-rule row
+    lastMatchRuleRow = 0
+    For scanPasteRow = UI_FIRST_MATCH_ROW To 50
+        If IsNumeric(ws.Cells(scanPasteRow, 1).Value) Or _
+           Trim(CStr(ws.Cells(scanPasteRow, 2).Value)) <> "" Then
+            lastMatchRuleRow = scanPasteRow
+        End If
+    Next scanPasteRow
+
+    If lastMatchRuleRow > 0 Then
+        pasteRow = lastMatchRuleRow + 1
     Else
-        pasteRow = 10
+        pasteRow = FIXED_DATA_HEADER_ROW
     End If
 
     ' Find last used row using scan loop
@@ -7153,6 +7163,7 @@ Public Sub LoadSourceFile()
     g_DataHeaderRow = 0
     g_Initialized = False
     Call InitializeDatasetContext(ws)
+    MsgBox "Before RebuildMatchBuilderUI: g_SafeMode=" & g_SafeMode & " g_ForceRebuild=" & g_ForceRebuild & " g_Initialized=" & g_Initialized & " g_DataHeaderRow=" & g_DataHeaderRow, vbInformation, "DEBUG"
     Call RebuildMatchBuilderUI
 
     Application.ScreenUpdating = True

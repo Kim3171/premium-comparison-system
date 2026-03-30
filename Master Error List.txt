@@ -1,0 +1,47 @@
+PREMIUM COMPARISON SYSTEM — CURRENT STATE
+==========================================
+
+STATUS: In active development — new architecture being implemented
+
+COMPLETED:
+- Full match UI with configurable match rules (Add/Delete/Clear X)
+- Execute Match with in-memory array processing and dictionary lookup
+- Build UI / Preserve and Rebuild UI
+- Select Files replaced with Load Source / Load Target buttons
+- Load Source: file picker, paste values into MATCH_UI sheet, auto-detect header, rebuild UI
+- Load Target: file picker, paste values into TARGET_DATA sheet
+- Export Results: save new .xlsx with source results + target data
+- Clear Data: clear both sheets, reset match rules, rebuild UI
+- Pause Macro: toggle Application.EnableEvents for safe column deletion
+- All button widths uniform, xlFreeFloating placement
+- Merge warnings suppressed with DisplayAlerts
+- X mark double-click toggle with multi-cell guard
+- Clear X restricted to UI match zone only
+- Match Type custom values preserved on renumber
+- g_MacroRunning flag prevents worksheet events during macro execution
+- Header detection with numeric row rejection
+
+IN PROGRESS:
+- Load Source error 0 bug being fixed (error handler scope issue)
+- Clear Data "Object variable not set" being fixed (missing Set keyword)
+
+REMAINING / KNOWN ISSUES:
+- Load Source: error 0 when loading — fix applied, needs testing
+- Clear Data: Object variable error — fix applied, needs testing  
+- Execute Match: subscript out of range error 9 — needs testing after Load Source fix
+- Export Results: needs testing after Execute Match works
+- Load Target creates blank sheet on cancel — minor, deferred
+- Merge warning popup during Build UI — cosmetic only, known limitation
+- Column delete cannot be undone — Excel VBA limitation, documented in README
+- Build UI slow on large files — known limitation
+
+DEFERRED / LOW PRIORITY:
+- Empty columns between mandatory headers / FindDataHeaderRow instability
+- Build UI accepts data rows as header rows when no named headers (partial fix in place)
+
+FILE LOCATIONS:
+- Main file: c:\Users\Acer\OneDrive - SM-CPA\Desktop\Work\Macros\Compare\BACKUP\Premium_Comparison_System.vba
+- Events file: c:\Users\Acer\OneDrive - SM-CPA\Desktop\Work\Macros\Compare\BACKUP\Premium_Worksheet_Events.vba
+
+CODING CLAUDE TOOL: Claude Code (command line)
+REVIEW CLAUDE: This project (claude.ai)

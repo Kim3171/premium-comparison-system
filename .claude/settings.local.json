@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir *.vba)",
+      "Bash(powershell -Command \"Get-ChildItem -Filter ''*.vba'' | ForEach-Object { Write-Host ''Checking:'' $_Name }\")"
+    ]
+  }
+}
