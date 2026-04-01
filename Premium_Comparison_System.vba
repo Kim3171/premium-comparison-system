@@ -3230,7 +3230,6 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
 
     ' Check if UI already exists
     uiExists = IsUIAlreadyExists(ws)
-    MsgBox "RebuildMatchBuilderUI: uiExists=" & uiExists & " g_ForceRebuild=" & g_ForceRebuild & " gate=" & (uiExists And Not g_ForceRebuild), vbInformation, "DEBUG"
     DebugPrint "RebuildMatchBuilderUI: UI exists = " & uiExists
 
     ' SAFETY CHECK: If UI already exists, don't rebuild (unless force rebuild requested)
@@ -6482,6 +6481,7 @@ Public Function FindDataHeaderRow(ws As Worksheet, aliases As Object, learned As
     Dim colCheck As Long
     Dim isUIRow As Boolean
     Dim uiCheck As Long
+    Dim uiCellVal As String
 
     foundHeader = False
     FindDataHeaderRow = 0
@@ -6511,7 +6511,11 @@ Public Function FindDataHeaderRow(ws As Worksheet, aliases As Object, learned As
                 ' Check if this is a UI row (contains "Match" keyword)
                 isUIRow = False
                 For uiCheck = 1 To detectionLastCol
-                    If Trim(CStr(ws.Cells(r, uiCheck).Value)) = "Match" Then
+                    uiCellVal = UCase(Trim(CStr(ws.Cells(r, uiCheck).Value)))
+                    If Left(uiCellVal, 5) = "MATCH" Or _
+                       Left(uiCellVal, 7) = "SOURCE:" Or _
+                       Left(uiCellVal, 7) = "TARGET:" Or _
+                       uiCellVal = "X" Then
                         isUIRow = True
                         Exit For
                     End If
@@ -7097,6 +7101,12 @@ Public Sub LoadSourceFile()
     Dim sourceLastCol As Long
     Dim lastMatchRuleRow As Long
     Dim scanPasteRow As Long
+    Dim scanCol As Long
+    Dim lastUsedCol As Long
+    Dim scanArray As Variant
+    Dim scanArrayRow As Long
+    Dim scanArrayCol As Long
+    Dim scanArrayLastRow As Long
     Application.ScreenUpdating = False
     On Error GoTo ErrorHandler
 
@@ -7141,18 +7151,31 @@ Public Sub LoadSourceFile()
         pasteRow = FIXED_DATA_HEADER_ROW
     End If
 
-    ' Find last used row using scan loop
-    lastUsedRow = 0
-    For scanRow = 1 To 10000
-        If Trim(CStr(ws.Cells(scanRow, 1).Value)) <> "" Then
-            lastUsedRow = scanRow
+    ' Find last used column in the paste row
+    lastUsedCol = 0
+    For scanCol = 1 To 500
+        If Trim(CStr(ws.Cells(pasteRow, scanCol).Value)) <> "" Then
+            lastUsedCol = scanCol
         End If
-    Next scanRow
+    Next scanCol
 
-    ' Clear existing content from paste row to last used row
-    If lastUsedRow >= pasteRow Then
+    ' Find last used row scanning across all columns up to lastUsedCol
+    lastUsedRow = 0
+    If lastUsedCol > 0 Then
+        For scanRow = pasteRow To pasteRow + 9999
+            For scanCol = 1 To lastUsedCol
+                If Trim(CStr(ws.Cells(scanRow, scanCol).Value)) <> "" Then
+                    lastUsedRow = scanRow
+                    Exit For
+                End If
+            Next scanCol
+        Next scanRow
+    End If
+
+    ' Clear existing content from boundary row to last used row (full width)
+    If lastUsedRow >= pasteRow And lastUsedCol > 0 Then
         Application.DisplayAlerts = False
-        ws.Range(ws.Rows(pasteRow), ws.Rows(lastUsedRow)).ClearContents
+        ws.Range(ws.Cells(pasteRow, 1), ws.Cells(lastUsedRow, lastUsedCol)).ClearContents
         Application.DisplayAlerts = True
     End If
 
@@ -7163,7 +7186,6 @@ Public Sub LoadSourceFile()
     g_DataHeaderRow = 0
     g_Initialized = False
     Call InitializeDatasetContext(ws)
-    MsgBox "Before RebuildMatchBuilderUI: g_SafeMode=" & g_SafeMode & " g_ForceRebuild=" & g_ForceRebuild & " g_Initialized=" & g_Initialized & " g_DataHeaderRow=" & g_DataHeaderRow, vbInformation, "DEBUG"
     Call RebuildMatchBuilderUI
 
     Application.ScreenUpdating = True
