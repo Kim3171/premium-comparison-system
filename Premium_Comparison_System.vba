@@ -7176,6 +7176,7 @@ Public Sub LoadSourceFile()
     If lastUsedRow >= pasteRow And lastUsedCol > 0 Then
         Application.DisplayAlerts = False
         ws.Range(ws.Cells(pasteRow, 1), ws.Cells(lastUsedRow, lastUsedCol)).ClearContents
+        ws.Range(ws.Cells(pasteRow, 1), ws.Cells(lastUsedRow, lastUsedCol)).ClearFormats
         Application.DisplayAlerts = True
     End If
 
