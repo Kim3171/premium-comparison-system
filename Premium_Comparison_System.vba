@@ -7103,10 +7103,6 @@ Public Sub LoadSourceFile()
     Dim scanPasteRow As Long
     Dim scanCol As Long
     Dim lastUsedCol As Long
-    Dim scanArray As Variant
-    Dim scanArrayRow As Long
-    Dim scanArrayCol As Long
-    Dim scanArrayLastRow As Long
     Application.ScreenUpdating = False
     On Error GoTo ErrorHandler
 
