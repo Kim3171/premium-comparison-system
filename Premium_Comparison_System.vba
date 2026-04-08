@@ -2840,29 +2840,16 @@ Private Sub AddMatchColumnsAtCorrectPosition(ws As Worksheet, ByVal dataHeaderRo
     nextInsertCol = 2  ' Default: after column 1
 
     If matchedIdCol = 0 Then
-        newCol = 1  ' First column position
-        DebugPrint "AddMatchColumnsAtCorrectPosition: MATCHED_ID not found, inserting at column " & newCol
-
-        ' INSERT column at position 1 (shifts existing data to the right)
-        On Error Resume Next
-        ws.Columns(newCol).Insert Shift:=xlToRight
-        On Error GoTo 0
-
-        ' Add MATCHED_ID header at column 1
-        ws.Cells(headerRowActual, newCol).Value = "MATCHED_ID"
-        ws.Cells(headerRowActual, newCol).Font.Bold = True
-        ws.Cells(headerRowActual, newCol).Interior.Color = RGB(100, 100, 180)
-        ws.Cells(headerRowActual, newCol).Font.Color = RGB(255, 255, 255)
-        ws.Cells(headerRowActual, newCol).HorizontalAlignment = xlCenter
-
-        matchedIdCol = newCol
-        lastDataCol = lastDataCol + 1  ' Data shifted right by 1
-        nextInsertCol = 2  ' After inserting MATCHED_ID at col 1, next goes at col 2
-        DebugPrint "AddMatchColumnsAtCorrectPosition: Added MATCHED_ID at column " & newCol
-    Else
-        ' MATCHED_ID already exists - start inserting subsequent columns after it
-        nextInsertCol = matchedIdCol + 1
+        ' MATCHED_ID missing - write directly to canonical position 1, no column insertion
+        DebugPrint "AddMatchColumnsAtCorrectPosition: MATCHED_ID not found, writing to column 1"
+        ws.Cells(headerRowActual, 1).Value = "MATCHED_ID"
+        ws.Cells(headerRowActual, 1).Font.Bold = True
+        ws.Cells(headerRowActual, 1).Interior.Color = RGB(100, 100, 180)
+        ws.Cells(headerRowActual, 1).Font.Color = RGB(255, 255, 255)
+        ws.Cells(headerRowActual, 1).HorizontalAlignment = xlCenter
+        matchedIdCol = 1
     End If
+    nextInsertCol = 2
 
     '===============================================================================
     ' FIX: Use canonical positions for ALL mandatory columns
@@ -2893,23 +2880,15 @@ Private Sub AddMatchColumnsAtCorrectPosition(ws As Worksheet, ByVal dataHeaderRo
         Next i
 
         If currentCol = 0 Then
-            ' Header missing - insert at its correct canonical position
-            newCol = targetCol
-            DebugPrint "AddMatchColumnsAtCorrectPosition: " & headerName & " missing, inserting at column " & newCol
-
-            On Error Resume Next
-            ws.Columns(newCol).Insert Shift:=xlToRight
-            On Error GoTo 0
-
-            ws.Cells(headerRowActual, newCol).Value = headerName
-            ws.Cells(headerRowActual, newCol).Font.Bold = True
-            ws.Cells(headerRowActual, newCol).Interior.Color = RGB(100, 100, 180)
-            ws.Cells(headerRowActual, newCol).Font.Color = RGB(255, 255, 255)
-            ws.Cells(headerRowActual, newCol).HorizontalAlignment = xlCenter
-
-            lastDataCol = lastDataCol + 1
+            ' Header missing - write directly to canonical position, no column insertion
+            DebugPrint "AddMatchColumnsAtCorrectPosition: " & headerName & " missing, writing to column " & targetCol
+            ws.Cells(headerRowActual, targetCol).Value = headerName
+            ws.Cells(headerRowActual, targetCol).Font.Bold = True
+            ws.Cells(headerRowActual, targetCol).Interior.Color = RGB(100, 100, 180)
+            ws.Cells(headerRowActual, targetCol).Font.Color = RGB(255, 255, 255)
+            ws.Cells(headerRowActual, targetCol).HorizontalAlignment = xlCenter
         Else
-            ' Header exists (at any position) - leave it alone, don't move
+            ' Header exists (at any position) - leave it alone
             DebugPrint "AddMatchColumnsAtCorrectPosition: " & headerName & " already exists at column " & currentCol
         End If
     Next headerName
@@ -5998,12 +5977,12 @@ Private Function PromptUserForHeaderRow(ws As Worksheet) As Long
 
     DebugPrint "PromptUserForHeaderRow: Scanning for header rows..."
 
-    ' Scan rows 1-20 to find candidates
+    ' Scan rows 1-200 to find candidates
     bestScore = 0
     bestRow = 10  ' Default
     candidates = "Header row candidates found:" & vbCrLf & vbCrLf
 
-    For r = 1 To 20
+    For r = 1 To 200
         score = 0
         For c = 1 To lastCol
             rawValue = CStr(ws.Cells(r, c).value)
@@ -7023,6 +7002,9 @@ Public Sub PreserveAndRebuildUI()
     g_ClearMatchDataOnRebuild = False  ' PRESERVE existing match rows
     Set g_CurrentWorksheet = ws
 
+    ' Re-detect data header row before rebuild to ensure g_DataHeaderRow is correct
+    Call InitializeDatasetContext(ws)
+
     ' Call rebuild - preserveMatchRows will be True because flag is False
     Call RebuildMatchBuilderUI
 
@@ -7103,6 +7085,20 @@ Public Sub LoadSourceFile()
     Dim scanPasteRow As Long
     Dim scanCol As Long
     Dim lastUsedCol As Long
+    Dim dataCol As Long
+    Dim consecutiveEmpty As Long
+    Dim clearLastCol As Long
+    Dim mandatoryNames(4) As String
+    Dim keepCol() As Boolean
+    Dim filteredData() As Variant
+    Dim filteredColCount As Long
+    Dim iCol As Long
+    Dim iName As Long
+    Dim iRow As Long
+    Dim isMandatory As Boolean
+    Dim sourceHeaderVal As String
+    Dim destCol As Long
+    Dim mCol As Long
     Application.ScreenUpdating = False
     On Error GoTo ErrorHandler
 
@@ -7131,6 +7127,42 @@ Public Sub LoadSourceFile()
     sourceLastRow = sourceWB.Worksheets(1).UsedRange.Rows.Count
     sourceLastCol = sourceWB.Worksheets(1).UsedRange.Columns.Count
     sourceWB.Close SaveChanges:=False
+    On Error GoTo 0
+
+    ' Define mandatory column names
+    mandatoryNames(0) = "MATCHED_ID"
+    mandatoryNames(1) = "MATCH_TYPE"
+    mandatoryNames(2) = "MATCH_STATUS"
+    mandatoryNames(3) = "SOURCE_FILE"
+    mandatoryNames(4) = "TARGET_FILE"
+
+    ' Identify which source columns to keep (exclude mandatory columns)
+    ReDim keepCol(1 To sourceLastCol)
+    filteredColCount = 0
+    For iCol = 1 To sourceLastCol
+        sourceHeaderVal = UCase(Trim(CStr(sourceData(1, iCol))))
+        isMandatory = False
+        For iName = 0 To 4
+            If sourceHeaderVal = mandatoryNames(iName) Then
+                isMandatory = True
+                Exit For
+            End If
+        Next iName
+        keepCol(iCol) = Not isMandatory
+        If keepCol(iCol) Then filteredColCount = filteredColCount + 1
+    Next iCol
+
+    ' Build filtered array excluding mandatory columns
+    ReDim filteredData(1 To sourceLastRow, 1 To filteredColCount)
+    For iRow = 1 To sourceLastRow
+        destCol = 0
+        For iCol = 1 To sourceLastCol
+            If keepCol(iCol) Then
+                destCol = destCol + 1
+                filteredData(iRow, destCol) = sourceData(iRow, iCol)
+            End If
+        Next iCol
+    Next iRow
 
     ' Scan from UI_FIRST_MATCH_ROW (row 5) to row 50 for last UI match-rule row
     lastMatchRuleRow = 0
@@ -7146,6 +7178,9 @@ Public Sub LoadSourceFile()
     Else
         pasteRow = FIXED_DATA_HEADER_ROW
     End If
+    If g_DataHeaderRow > 0 And pasteRow < g_DataHeaderRow Then
+        pasteRow = g_DataHeaderRow
+    End If
 
     ' Find last used column in the paste row
     lastUsedCol = 0
@@ -7155,29 +7190,63 @@ Public Sub LoadSourceFile()
         End If
     Next scanCol
 
-    ' Find last used row scanning across all columns up to lastUsedCol
-    lastUsedRow = 0
-    If lastUsedCol > 0 Then
-        For scanRow = pasteRow To pasteRow + 9999
-            For scanCol = 1 To lastUsedCol
-                If Trim(CStr(ws.Cells(scanRow, scanCol).Value)) <> "" Then
-                    lastUsedRow = scanRow
-                    Exit For
-                End If
-            Next scanCol
+    ' Find first populated data column in pasteRow (column 6 onward) for row scan
+    dataCol = 0
+    For scanCol = 6 To lastUsedCol
+        If Trim(CStr(ws.Cells(pasteRow, scanCol).Value)) <> "" Then
+            dataCol = scanCol
+            Exit For
+        End If
+    Next scanCol
+
+    ' Find last used row by scanning the data column downward
+    ' Stop after 10 consecutive empty cells to handle sparse data
+    lastUsedRow = pasteRow
+    If dataCol > 0 Then
+        consecutiveEmpty = 0
+        For scanRow = pasteRow + 1 To pasteRow + 500000
+            If scanRow > ws.Rows.Count Then Exit For
+            If Trim(CStr(ws.Cells(scanRow, dataCol).Value)) = "" Then
+                consecutiveEmpty = consecutiveEmpty + 1
+                If consecutiveEmpty >= 10 Then Exit For
+            Else
+                consecutiveEmpty = 0
+                lastUsedRow = scanRow
+            End If
         Next scanRow
     End If
 
     ' Clear existing content from boundary row to last used row (full width)
-    If lastUsedRow >= pasteRow And lastUsedCol > 0 Then
+    ' Use max of old lastUsedCol and new data width to ensure full coverage
+    clearLastCol = lastUsedCol
+    If 5 + filteredColCount > clearLastCol Then clearLastCol = 5 + filteredColCount
+    If lastUsedRow >= pasteRow And clearLastCol > 0 Then
         Application.DisplayAlerts = False
-        ws.Range(ws.Cells(pasteRow, 1), ws.Cells(lastUsedRow, lastUsedCol)).ClearContents
-        ws.Range(ws.Cells(pasteRow, 1), ws.Cells(lastUsedRow, lastUsedCol)).ClearFormats
+        ws.Range(ws.Cells(pasteRow, 1), ws.Cells(lastUsedRow, clearLastCol)).ClearContents
+        ws.Range(ws.Cells(pasteRow, 1), ws.Cells(lastUsedRow, clearLastCol)).ClearFormats
         Application.DisplayAlerts = True
     End If
 
-    ' Write array values directly
-    ws.Range(ws.Cells(pasteRow, 1), ws.Cells(pasteRow + sourceLastRow - 1, sourceLastCol)).Value = sourceData
+    ' Targeted clear of mandatory columns 1-5 using exact source row count
+    ' Guarantees full clear regardless of gaps in source data columns
+    If sourceLastRow > 0 Then
+        Application.DisplayAlerts = False
+        ws.Range(ws.Cells(pasteRow, 1), ws.Cells(pasteRow + sourceLastRow - 1, 5)).ClearContents
+        ws.Range(ws.Cells(pasteRow, 1), ws.Cells(pasteRow + sourceLastRow - 1, 5)).ClearFormats
+        Application.DisplayAlerts = True
+    End If
+
+    ' Write mandatory headers to columns 1-5 of pasteRow
+    For mCol = 0 To 4
+        ws.Cells(pasteRow, mCol + 1).Value = mandatoryNames(mCol)
+        ws.Cells(pasteRow, mCol + 1).Font.Bold = True
+        ws.Cells(pasteRow, mCol + 1).Interior.Color = RGB(100, 100, 180)
+        ws.Cells(pasteRow, mCol + 1).Font.Color = RGB(255, 255, 255)
+        ws.Cells(pasteRow, mCol + 1).HorizontalAlignment = xlCenter
+    Next mCol
+
+    ' Paste filtered source data starting at column 6
+    ws.Range(ws.Cells(pasteRow, 6), ws.Cells(pasteRow + sourceLastRow - 1, 5 + filteredColCount)).Value = filteredData
 
     ' Reinitialize and rebuild UI
     g_DataHeaderRow = 0
