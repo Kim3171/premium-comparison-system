@@ -6491,7 +6491,8 @@ Public Function FindDataHeaderRow(ws As Worksheet, aliases As Object, learned As
                 isUIRow = False
                 For uiCheck = 1 To detectionLastCol
                     uiCellVal = UCase(Trim(CStr(ws.Cells(r, uiCheck).Value)))
-                    If Left(uiCellVal, 5) = "MATCH" Or _
+                    If uiCellVal = "MATCH" Or _
+                       uiCellVal = "MATCH TYPE" Or _
                        Left(uiCellVal, 7) = "SOURCE:" Or _
                        Left(uiCellVal, 7) = "TARGET:" Or _
                        uiCellVal = "X" Then
