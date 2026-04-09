@@ -6462,6 +6462,8 @@ Public Function FindDataHeaderRow(ws As Worksheet, aliases As Object, learned As
     Dim isUIRow As Boolean
     Dim uiCheck As Long
     Dim uiCellVal As String
+    Dim isDataHeader As Boolean
+    Dim dhCheck As Long
 
     foundHeader = False
     FindDataHeaderRow = 0
@@ -6488,6 +6490,21 @@ Public Function FindDataHeaderRow(ws As Worksheet, aliases As Object, learned As
             Next colCheck
 
             If nonEmptyCount >= 3 Then
+                ' Check if this row contains MATCHED_ID — definitive data header identifier
+                isDataHeader = False
+                For dhCheck = 1 To detectionLastCol
+                    If UCase(Trim(CStr(ws.Cells(r, dhCheck).Value))) = "MATCHED_ID" Then
+                        isDataHeader = True
+                        Exit For
+                    End If
+                Next dhCheck
+                If isDataHeader Then
+                    FindDataHeaderRow = r
+                    foundHeader = True
+                    DebugPrint "FindDataHeaderRow: Data header confirmed by MATCHED_ID at row " & r
+                    Exit For
+                End If
+
                 ' Check if this is a UI row (contains "Match" keyword)
                 isUIRow = False
                 For uiCheck = 1 To detectionLastCol
@@ -7522,6 +7539,11 @@ Public Sub ClearAllData()
     Dim lastRow As Long
     Dim scanRow As Long
     Dim response As Integer
+    Dim clearDataCol As Long
+    Dim clearConsecEmpty As Long
+    Dim findCol As Long
+    Dim nullCol As Long
+    Dim lastDataCol As Long
 
     ' Confirm before clearing
     response = MsgBox("This will clear all source data, target data, and reset match rules." & vbCrLf & vbCrLf & _
@@ -7537,19 +7559,33 @@ Public Sub ClearAllData()
     Set ws = g_CurrentWorksheet
     If ws Is Nothing Then Set ws = ActiveSheet
 
-    ' Clear source data below UI zone
+    ' Clear source data below header row — preserve header row itself
     If g_DataHeaderRow > 0 Then
-        lastRow = 0
-        For scanRow = g_DataHeaderRow To g_DataHeaderRow + 100000
-            If scanRow > ws.Rows.Count Then Exit For
-            If Trim(CStr(ws.Cells(scanRow, 1).Value)) <> "" Then
-                lastRow = scanRow
+        clearDataCol = 0
+        For findCol = 6 To 500
+            If Trim(CStr(ws.Cells(g_DataHeaderRow, findCol).Value)) <> "" Then
+                clearDataCol = findCol
+                Exit For
             End If
-        Next scanRow
-
-        If lastRow >= g_DataHeaderRow Then
+        Next findCol
+        lastRow = g_DataHeaderRow
+        If clearDataCol > 0 Then
+            clearConsecEmpty = 0
+            For scanRow = g_DataHeaderRow + 1 To g_DataHeaderRow + 500000
+                If scanRow > ws.Rows.Count Then Exit For
+                If Trim(CStr(ws.Cells(scanRow, clearDataCol).Value)) = "" Then
+                    clearConsecEmpty = clearConsecEmpty + 1
+                    If clearConsecEmpty >= 10 Then Exit For
+                Else
+                    clearConsecEmpty = 0
+                    lastRow = scanRow
+                End If
+            Next scanRow
+        End If
+        If lastRow > g_DataHeaderRow Then
             Application.DisplayAlerts = False
-            ws.Range(ws.Rows(g_DataHeaderRow), ws.Rows(lastRow)).ClearContents
+            ws.Range(ws.Rows(g_DataHeaderRow + 1), ws.Rows(lastRow)).ClearContents
+            ws.Range(ws.Rows(g_DataHeaderRow + 1), ws.Rows(lastRow)).ClearFormats
             Application.DisplayAlerts = True
         End If
     End If
@@ -7575,6 +7611,22 @@ Public Sub ClearAllData()
         End If
     End If
 
+    ' Write ~NULL~ to data header row columns 6+ and UI column header row columns 6+
+    If g_DataHeaderRow > 0 Then
+        lastDataCol = 0
+        For nullCol = 6 To 500
+            If Trim(CStr(ws.Cells(g_DataHeaderRow, nullCol).Value)) <> "" Then
+                lastDataCol = nullCol
+            End If
+        Next nullCol
+        If lastDataCol >= 6 Then
+            For nullCol = 6 To lastDataCol
+                ws.Cells(g_DataHeaderRow, nullCol).Value = "~NULL~"
+                ws.Cells(UI_COLHEADER_ROW, nullCol).Value = "~NULL~"
+            Next nullCol
+        End If
+    End If
+
     ' Reset match rules to single default row
     g_ClearMatchDataOnRebuild = True
     g_ForceRebuild = True
@@ -7588,6 +7640,7 @@ Public Sub ClearAllData()
     Set g_TargetWorkbook = Nothing
 
     ' Rebuild UI fresh
+    Call InitializeDatasetContext(ws)
     Call RebuildMatchBuilderUI
 
     Application.ScreenUpdating = True
