@@ -7089,6 +7089,7 @@ Public Sub LoadSourceFile()
     Dim dataCol As Long
     Dim consecutiveEmpty As Long
     Dim clearLastCol As Long
+    Dim scanCeiling As Long
     Dim mandatoryNames(4) As String
     Dim keepCol() As Boolean
     Dim filteredData() As Variant
@@ -7165,9 +7166,11 @@ Public Sub LoadSourceFile()
         Next iCol
     Next iRow
 
-    ' Scan from UI_FIRST_MATCH_ROW (row 5) to row 50 for last UI match-rule row
+    ' Scan from UI_FIRST_MATCH_ROW (row 5) to g_DataHeaderRow - 1 for last UI match-rule row
     lastMatchRuleRow = 0
-    For scanPasteRow = UI_FIRST_MATCH_ROW To 50
+    scanCeiling = 50
+    If g_DataHeaderRow > 0 Then scanCeiling = g_DataHeaderRow - 1
+    For scanPasteRow = UI_FIRST_MATCH_ROW To scanCeiling
         If IsNumeric(ws.Cells(scanPasteRow, 1).Value) Or _
            Trim(CStr(ws.Cells(scanPasteRow, 2).Value)) <> "" Then
             lastMatchRuleRow = scanPasteRow
