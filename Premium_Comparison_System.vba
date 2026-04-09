@@ -7119,6 +7119,7 @@ Public Sub LoadSourceFile()
     Dim sourceHeaderVal As String
     Dim destCol As Long
     Dim mCol As Long
+    Dim syncCol As Long
     Application.ScreenUpdating = False
     On Error GoTo ErrorHandler
 
@@ -7269,6 +7270,11 @@ Public Sub LoadSourceFile()
 
     ' Paste filtered source data starting at column 6
     ws.Range(ws.Cells(pasteRow, 6), ws.Cells(pasteRow + sourceLastRow - 1, 5 + filteredColCount)).Value = filteredData
+
+    ' Sync UI column header row columns 6+ to match data header row columns 6+
+    For syncCol = 6 To 5 + filteredColCount
+        ws.Cells(UI_COLHEADER_ROW, syncCol).Value = ws.Cells(pasteRow, syncCol).Value
+    Next syncCol
 
     ' Reinitialize and rebuild UI
     g_DataHeaderRow = 0
