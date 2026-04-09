@@ -6976,6 +6976,9 @@ Public Sub PreserveAndRebuildUI()
     '
     Dim ws As Worksheet
     Dim btn As Excel.Button
+    Dim syncCol As Long
+    Dim lastSyncCol As Long
+    Dim wsSyncSheet As Worksheet
 
     g_MacroRunning = True
 
@@ -7026,6 +7029,23 @@ Public Sub PreserveAndRebuildUI()
 
     ' Call rebuild - preserveMatchRows will be True because flag is False
     Call RebuildMatchBuilderUI
+
+    ' Sync UI column header row columns 6+ to match data header row columns 6+
+    If g_DataHeaderRow > 0 Then
+        Set wsSyncSheet = g_CurrentWorksheet
+        If wsSyncSheet Is Nothing Then Set wsSyncSheet = ActiveSheet
+        lastSyncCol = 0
+        For syncCol = 6 To 500
+            If Trim(CStr(wsSyncSheet.Cells(g_DataHeaderRow, syncCol).Value)) <> "" Then
+                lastSyncCol = syncCol
+            End If
+        Next syncCol
+        If lastSyncCol >= 6 Then
+            For syncCol = 6 To lastSyncCol
+                wsSyncSheet.Cells(UI_COLHEADER_ROW, syncCol).Value = wsSyncSheet.Cells(g_DataHeaderRow, syncCol).Value
+            Next syncCol
+        End If
+    End If
 
     ' Restore performance settings
     Application.ScreenUpdating = True
