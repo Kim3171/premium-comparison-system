@@ -5008,9 +5008,10 @@ Public Sub ExecuteCompareWithValidation()
     Dim returnCol As String
     returnCol = PromptForMatchedIdColumn()
 
-    If returnCol <> "" Then
-        g_MatchedIdColumn = returnCol
+    If returnCol = "" Then
+        GoTo CleanExit
     End If
+    g_MatchedIdColumn = returnCol
 
     ' Run the comparison
     Call CompareAssets
