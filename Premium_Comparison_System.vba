@@ -7629,6 +7629,14 @@ Public Sub ExportResults()
         wsTarget.Range(wsTarget.Cells(1, 1), wsTarget.Cells(lastTargetRow, lastTargetCol)).Copy
         newWS2.Cells(1, 1).PasteSpecial xlPasteValues
         Application.CutCopyMode = False
+
+        ' Apply target sheet number formats to exported columns
+        For fmtCol = 1 To lastTargetCol
+            srcFmt = wsTarget.Cells(2, fmtCol).NumberFormat
+            If srcFmt <> "General" And srcFmt <> "@" And srcFmt <> "" Then
+                newWS2.Columns(fmtCol).NumberFormat = srcFmt
+            End If
+        Next fmtCol
     End If
 
     ' Save and close new workbook
