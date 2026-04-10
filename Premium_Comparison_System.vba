@@ -1378,6 +1378,11 @@ Private Sub ConfigureSourceTarget()
         Set g_SourceWorkbook = ThisWorkbook
     End If
     Set g_SourceSheet = SafeGetWorksheet(g_SourceWorkbook, sourceWSName)
+    ' Fallback: if saved sheet name no longer exists, use current worksheet
+    If g_SourceSheet Is Nothing Then
+        Set g_SourceSheet = g_CurrentWorksheet
+        If g_SourceSheet Is Nothing Then Set g_SourceSheet = ActiveSheet
+    End If
 
     ' Set target workbook and sheet
     Set g_TargetWorkbook = GetWorkbookByName(targetWBName)
@@ -7381,6 +7386,10 @@ Public Sub LoadTargetFile()
     Dim lastUsedRow As Long
     Dim scanRow As Long
     Dim selectedTargetSheet As Worksheet
+    Dim fmtCol As Long
+    Dim lastTargetCol As Long
+    Dim tgtFmt As String
+    Dim colFormats() As String
 
     Application.ScreenUpdating = False
     On Error GoTo ErrorHandler
@@ -7429,6 +7438,13 @@ Public Sub LoadTargetFile()
     End If
     selectedTargetSheet.UsedRange.Copy
 
+    ' Capture number formats from target sheet before closing
+    lastTargetCol = selectedTargetSheet.UsedRange.Columns.Count
+    ReDim colFormats(1 To lastTargetCol)
+    For fmtCol = 1 To lastTargetCol
+        colFormats(fmtCol) = selectedTargetSheet.Cells(2, fmtCol).NumberFormat
+    Next fmtCol
+
     ' Clear existing content
     lastUsedRow = 0
     For scanRow = 1 To 10000
@@ -7444,6 +7460,14 @@ Public Sub LoadTargetFile()
     ' Paste values only
     wsTarget.Cells(1, 1).PasteSpecial xlPasteValues
     Application.CutCopyMode = False
+
+    ' Apply captured number formats to target sheet columns
+    For fmtCol = 1 To lastTargetCol
+        tgtFmt = colFormats(fmtCol)
+        If tgtFmt <> "General" And tgtFmt <> "@" And tgtFmt <> "" Then
+            wsTarget.Columns(fmtCol).NumberFormat = tgtFmt
+        End If
+    Next fmtCol
 
     ' Close target file without saving
     targetWB.Close SaveChanges:=False
