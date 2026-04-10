@@ -7162,6 +7162,11 @@ Public Sub LoadSourceFile()
     Set ws = g_CurrentWorksheet
     If ws Is Nothing Then Set ws = ActiveSheet
 
+    ' Initialize dataset context to ensure g_DataHeaderRow is set before pasteRow calculation
+    If g_DataHeaderRow = 0 Or Not g_Initialized Then
+        Call InitializeDatasetContext(ws)
+    End If
+
     ' Open the selected file and read data directly into array
     Set sourceWB = Workbooks.Open(sourceFileName)
     sourceData = sourceWB.Worksheets(1).UsedRange.Value
