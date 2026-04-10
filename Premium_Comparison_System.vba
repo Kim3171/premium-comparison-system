@@ -7049,6 +7049,10 @@ Public Sub PreserveAndRebuildUI()
             For syncCol = 6 To lastSyncCol
                 wsSyncSheet.Cells(UI_COLHEADER_ROW, syncCol).Value = wsSyncSheet.Cells(g_DataHeaderRow, syncCol).Value
             Next syncCol
+            ' Set column widths based on header name length only — not data rows
+            For syncCol = 6 To lastSyncCol
+                wsSyncSheet.Columns(syncCol).ColumnWidth = Len(CStr(wsSyncSheet.Cells(UI_COLHEADER_ROW, syncCol).Value)) * 1.2 + 2
+            Next syncCol
         End If
     End If
 
@@ -7351,6 +7355,10 @@ Public Sub LoadSourceFile()
     ' Sync UI column header row columns 6+ to match data header row columns 6+
     For syncCol = 6 To 5 + filteredColCount
         ws.Cells(UI_COLHEADER_ROW, syncCol).Value = ws.Cells(pasteRow, syncCol).Value
+    Next syncCol
+    ' Set column widths based on header name length only — not data rows
+    For syncCol = 6 To 5 + filteredColCount
+        ws.Columns(syncCol).ColumnWidth = Len(CStr(ws.Cells(UI_COLHEADER_ROW, syncCol).Value)) * 1.2 + 2
     Next syncCol
 
     ' Reinitialize and rebuild UI
