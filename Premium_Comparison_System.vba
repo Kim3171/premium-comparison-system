@@ -7106,6 +7106,46 @@ Public Sub ToggleMacroEvents()
 End Sub
 
 '===============================================================================
+' PromptForSheetSelection - Prompt user to select a sheet from a workbook
+' Returns the selected worksheet or Nothing if cancelled
+'===============================================================================
+Private Function PromptForSheetSelection(wb As Workbook) As Worksheet
+    Dim i As Long
+    Dim sheetList As String
+    Dim userChoice As String
+    Dim selectedIdx As Long
+
+    If wb.Worksheets.Count = 1 Then
+        Set PromptForSheetSelection = wb.Worksheets(1)
+        Exit Function
+    End If
+
+    sheetList = "File contains " & wb.Worksheets.Count & " sheets:" & vbCrLf & vbCrLf
+    For i = 1 To wb.Worksheets.Count
+        sheetList = sheetList & "  " & i & ".  " & wb.Worksheets(i).Name & vbCrLf
+    Next i
+    sheetList = sheetList & vbCrLf & "Enter the sheet NUMBER to load:"
+
+    userChoice = InputBox(sheetList, "Select Sheet", "1")
+
+    If userChoice = "" Then
+        Set PromptForSheetSelection = Nothing
+        Exit Function
+    End If
+
+    On Error Resume Next
+    selectedIdx = CLng(userChoice)
+    On Error GoTo 0
+
+    If selectedIdx < 1 Or selectedIdx > wb.Worksheets.Count Then
+        MsgBox "Invalid selection. Using sheet 1.", vbInformation
+        selectedIdx = 1
+    End If
+
+    Set PromptForSheetSelection = wb.Worksheets(selectedIdx)
+End Function
+
+'===============================================================================
 ' LoadSourceFile - Load source data from an external Excel file
 '===============================================================================
 Public Sub LoadSourceFile()
@@ -7128,6 +7168,7 @@ Public Sub LoadSourceFile()
     Dim consecutiveEmpty As Long
     Dim clearLastCol As Long
     Dim scanCeiling As Long
+    Dim selectedSourceSheet As Worksheet
     Dim mandatoryNames(4) As String
     Dim keepCol() As Boolean
     Dim filteredData() As Variant
@@ -7169,9 +7210,15 @@ Public Sub LoadSourceFile()
 
     ' Open the selected file and read data directly into array
     Set sourceWB = Workbooks.Open(sourceFileName)
-    sourceData = sourceWB.Worksheets(1).UsedRange.Value
-    sourceLastRow = sourceWB.Worksheets(1).UsedRange.Rows.Count
-    sourceLastCol = sourceWB.Worksheets(1).UsedRange.Columns.Count
+    Set selectedSourceSheet = PromptForSheetSelection(sourceWB)
+    If selectedSourceSheet Is Nothing Then
+        sourceWB.Close SaveChanges:=False
+        Application.ScreenUpdating = True
+        Exit Sub
+    End If
+    sourceData = selectedSourceSheet.UsedRange.Value
+    sourceLastRow = selectedSourceSheet.UsedRange.Rows.Count
+    sourceLastCol = selectedSourceSheet.UsedRange.Columns.Count
     sourceWB.Close SaveChanges:=False
     On Error GoTo 0
 
@@ -7333,6 +7380,7 @@ Public Sub LoadTargetFile()
     Dim wsTarget As Worksheet
     Dim lastUsedRow As Long
     Dim scanRow As Long
+    Dim selectedTargetSheet As Worksheet
 
     Application.ScreenUpdating = False
     On Error GoTo ErrorHandler
@@ -7373,7 +7421,13 @@ Public Sub LoadTargetFile()
 
     ' Open the selected file and copy data
     Set targetWB = Workbooks.Open(targetFileName)
-    targetWB.Worksheets(1).UsedRange.Copy
+    Set selectedTargetSheet = PromptForSheetSelection(targetWB)
+    If selectedTargetSheet Is Nothing Then
+        targetWB.Close SaveChanges:=False
+        Application.ScreenUpdating = True
+        Exit Sub
+    End If
+    selectedTargetSheet.UsedRange.Copy
 
     ' Clear existing content
     lastUsedRow = 0
