@@ -7658,6 +7658,11 @@ Public Sub ClearAllData()
     Set ws = g_CurrentWorksheet
     If ws Is Nothing Then Set ws = ActiveSheet
 
+    ' Ensure g_DataHeaderRow is initialized
+    If g_DataHeaderRow = 0 Or Not g_Initialized Then
+        Call InitializeDatasetContext(ws)
+    End If
+
     ' Clear source data below header row — preserve header row itself
     If g_DataHeaderRow > 0 Then
         clearDataCol = 0
