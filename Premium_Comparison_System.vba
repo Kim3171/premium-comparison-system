@@ -7484,6 +7484,8 @@ Public Sub ExportResults()
     Dim lastTargetCol As Long
     Dim scanRow As Long
     Dim scanCol As Long
+    Dim fmtCol As Long
+    Dim srcFmt As String
 
     Application.ScreenUpdating = False
 
@@ -7492,6 +7494,11 @@ Public Sub ExportResults()
     ' Get source worksheet
     Set wsSource = g_CurrentWorksheet
     If wsSource Is Nothing Then Set wsSource = ActiveSheet
+
+    ' Ensure g_DataHeaderRow is initialized
+    If g_DataHeaderRow = 0 Or Not g_Initialized Then
+        Call InitializeDatasetContext(wsSource)
+    End If
 
     ' Get target worksheet
     On Error Resume Next
@@ -7581,8 +7588,15 @@ Public Sub ExportResults()
     newWS1.Name = "Source_Results"
     wsSource.Range(wsSource.Cells(g_DataHeaderRow, 1), wsSource.Cells(lastSourceRow, lastSourceCol)).Copy
     newWS1.Cells(1, 1).PasteSpecial xlPasteValues
-    newWS1.Cells(1, 1).PasteSpecial xlPasteFormats
     Application.CutCopyMode = False
+
+    ' Apply source number formats to exported columns — preserves date/time display
+    For fmtCol = 1 To lastSourceCol
+        srcFmt = wsSource.Cells(g_DataHeaderRow + 1, fmtCol).NumberFormat
+        If srcFmt <> "General" And srcFmt <> "@" And srcFmt <> "" Then
+            newWS1.Columns(fmtCol).NumberFormat = srcFmt
+        End If
+    Next fmtCol
 
     ' Copy target data to Sheet2
     If lastTargetRow > 0 And lastTargetCol > 0 Then
