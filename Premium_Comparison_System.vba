@@ -2852,6 +2852,7 @@ Private Sub AddMatchColumnsAtCorrectPosition(ws As Worksheet, ByVal dataHeaderRo
         ws.Cells(headerRowActual, 1).Interior.Color = RGB(100, 100, 180)
         ws.Cells(headerRowActual, 1).Font.Color = RGB(255, 255, 255)
         ws.Cells(headerRowActual, 1).HorizontalAlignment = xlCenter
+        ws.Columns(1).ColumnWidth = Len("MATCHED_ID") * 3.5 + 2
         matchedIdCol = 1
     End If
     nextInsertCol = 2
@@ -2892,6 +2893,7 @@ Private Sub AddMatchColumnsAtCorrectPosition(ws As Worksheet, ByVal dataHeaderRo
             ws.Cells(headerRowActual, targetCol).Interior.Color = RGB(100, 100, 180)
             ws.Cells(headerRowActual, targetCol).Font.Color = RGB(255, 255, 255)
             ws.Cells(headerRowActual, targetCol).HorizontalAlignment = xlCenter
+            ws.Columns(targetCol).ColumnWidth = Len(headerName) * 3.5 + 2
         Else
             ' Header exists (at any position) - leave it alone
             DebugPrint "AddMatchColumnsAtCorrectPosition: " & headerName & " already exists at column " & currentCol
@@ -4429,6 +4431,7 @@ Private Sub BuildUIFreshFixed(ws As Worksheet, lastCol As Long, matches As Colle
     Dim matchObj As Object
     Dim colIndices As Collection
     Dim i As Long
+    Dim bufCol As Long
 
     DebugPrint "BuildUIFreshFixed: Starting..."
 
@@ -4475,12 +4478,16 @@ Private Sub BuildUIFreshFixed(ws As Worksheet, lastCol As Long, matches As Colle
         destRange.WrapText = True
     End If
 
-    ' AutoFit columns for better visibility
-    On Error Resume Next
-    ws.Range(ws.Cells(UI_COLHEADER_ROW, 1), ws.Cells(UI_COLHEADER_ROW, lastCol)).EntireColumn.AutoFit
-    ' Apply minimum column widths
-    ws.Columns(1).ColumnWidth = 10
-    ws.Columns(2).ColumnWidth = 15
+    ' Set column widths based on UI header row text length — not data rows
+    For bufCol = 1 To lastCol
+        ws.Columns(bufCol).ColumnWidth = Len(CStr(ws.Cells(UI_COLHEADER_ROW, bufCol).Value)) * 1.2 + 2
+    Next bufCol
+
+    ws.Columns(1).ColumnWidth = Len("MATCHED_ID") * 1.8 + 2
+    ws.Columns(2).ColumnWidth = Len("MATCH_TYPE") * 1.8 + 2
+    ws.Columns(3).ColumnWidth = Len("MATCH_STATUS") * 1.8 + 2
+    ws.Columns(4).ColumnWidth = Len("SOURCE_FILE") * 1.8 + 2
+    ws.Columns(5).ColumnWidth = Len("TARGET_FILE") * 1.8 + 2
     For c = 3 To lastCol
         If ws.Columns(c).ColumnWidth < 12 Then ws.Columns(c).ColumnWidth = 12
     Next c
