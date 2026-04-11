@@ -7347,6 +7347,7 @@ Public Sub LoadSourceFile()
         ws.Cells(pasteRow, mCol + 1).Interior.Color = RGB(100, 100, 180)
         ws.Cells(pasteRow, mCol + 1).Font.Color = RGB(255, 255, 255)
         ws.Cells(pasteRow, mCol + 1).HorizontalAlignment = xlCenter
+        ws.Columns(mCol + 1).ColumnWidth = Len(mandatoryNames(mCol)) * 1.8 + 2
     Next mCol
 
     ' Paste filtered source data starting at column 6
