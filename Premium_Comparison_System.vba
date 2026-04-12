@@ -602,6 +602,9 @@ Public Sub CompareAssets()
     Dim minTargetCol As Long
     Dim ti As Long
     Dim i As Long
+    Dim sourceIdColIdx As Long
+    Dim preColKey As Variant
+    Dim tempFoundIdx As Long
 
     ' SAFE MODE GUARD - Block destructive operations in SafeMode
     If g_SafeMode Then
@@ -873,6 +876,20 @@ Public Sub CompareAssets()
     targetWorkbookName = GetWorkbookName(g_TargetWorkbook)
     sourceWorkbookName = GetWorkbookName(g_SourceWorkbook)
 
+    ' PRE-COMPUTE: Find leftmost source ID column index once (avoids colMap enumeration per row)
+    sourceIdColIdx = 0
+    tempFoundIdx = 999999
+    For Each preColKey In sourceCols.keys
+        If UCase(preColKey) <> "MATCHED_ID" And UCase(preColKey) <> "MATCH_TYPE" And _
+           UCase(preColKey) <> "MATCH_STATUS" And UCase(preColKey) <> "SOURCE_FILE" And _
+           UCase(preColKey) <> "TARGET_FILE" And UCase(preColKey) <> "MATCHED_ASSETID" Then
+            If sourceCols(preColKey) < tempFoundIdx Then
+                tempFoundIdx = sourceCols(preColKey)
+                sourceIdColIdx = sourceCols(preColKey)
+            End If
+        End If
+    Next preColKey
+
     ' OPTIMIZATION: Pre-calculate values outside loop
     Dim sourceLastRow As Long
     sourceLastRow = UBound(sourceData, 1)
@@ -887,7 +904,11 @@ Public Sub CompareAssets()
         matchType = "~NULL~"
 
         ' Get source ASSETID for reverse lookup
-        sourceAssetID = GetKeyColumnValue(sourceData, sourceRow, sourceCols)
+        If sourceIdColIdx > 0 Then
+            sourceAssetID = SafeCleanString(sourceData(sourceRow, sourceIdColIdx))
+        Else
+            sourceAssetID = GetKeyColumnValue(sourceData, sourceRow, sourceCols)
+        End If
 
         ' Try matches in order (TOP TO BOTTOM - FIRST MATCH ONLY)
         For m = 1 To matchDefs.Count
