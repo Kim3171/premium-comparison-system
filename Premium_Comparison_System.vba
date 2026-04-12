@@ -605,6 +605,7 @@ Public Sub CompareAssets()
     Dim sourceIdColIdx As Long
     Dim preColKey As Variant
     Dim tempFoundIdx As Long
+    Dim targetIdColIdx As Long
 
     ' SAFE MODE GUARD - Block destructive operations in SafeMode
     If g_SafeMode Then
@@ -835,7 +836,11 @@ Public Sub CompareAssets()
                 If g_MatchedIdColumn <> "" And targetCols.Exists(g_MatchedIdColumn) Then
                     targetKeyValue = SafeCleanString(targetData(targetRow, targetCols(g_MatchedIdColumn)))
                 Else
-                    targetKeyValue = GetKeyColumnValue(targetData, targetRow, targetCols)
+                    If targetIdColIdx > 0 Then
+                        targetKeyValue = SafeCleanString(targetData(targetRow, targetIdColIdx))
+                    Else
+                        targetKeyValue = GetKeyColumnValue(targetData, targetRow, targetCols)
+                    End If
                 End If
 
                 If targetKeyValue <> "" Then
@@ -875,6 +880,20 @@ Public Sub CompareAssets()
 
     targetWorkbookName = GetWorkbookName(g_TargetWorkbook)
     sourceWorkbookName = GetWorkbookName(g_SourceWorkbook)
+
+    ' PRE-COMPUTE: Find leftmost target ID column index once (avoids colMap enumeration per row)
+    targetIdColIdx = 0
+    tempFoundIdx = 999999
+    For Each preColKey In targetCols.keys
+        If UCase(preColKey) <> "MATCHED_ID" And UCase(preColKey) <> "MATCH_TYPE" And _
+           UCase(preColKey) <> "MATCH_STATUS" And UCase(preColKey) <> "SOURCE_FILE" And _
+           UCase(preColKey) <> "TARGET_FILE" And UCase(preColKey) <> "MATCHED_ASSETID" Then
+            If targetCols(preColKey) < tempFoundIdx Then
+                tempFoundIdx = targetCols(preColKey)
+                targetIdColIdx = targetCols(preColKey)
+            End If
+        End If
+    Next preColKey
 
     ' PRE-COMPUTE: Find leftmost source ID column index once (avoids colMap enumeration per row)
     sourceIdColIdx = 0
