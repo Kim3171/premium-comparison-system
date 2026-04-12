@@ -2431,7 +2431,7 @@ Private Sub EnsureWriteColumnsExist(ws As Worksheet, colMap As Object, _
             ws.Columns(matchedIdPos + 1).Insert Shift:=xlToRight
             ws.Cells(headerRow, matchedIdPos + 1).Value = "MATCH_TYPE"
             ws.Cells(headerRow, matchedIdPos + 1).Font.Bold = True
-            ws.Cells(headerRow, matchedIdPos + 1).Interior.Color = RGB(100, 100, 180)
+            ws.Cells(headerRow, matchedIdPos + 1).Interior.Color = RGB(91, 115, 150)
             ws.Cells(headerRow, matchedIdPos + 1).Font.Color = RGB(255, 255, 255)
             ws.Cells(headerRow, matchedIdPos + 1).HorizontalAlignment = xlCenter
             existingPos.Add "MATCH_TYPE", matchedIdPos + 1
@@ -2444,7 +2444,7 @@ Private Sub EnsureWriteColumnsExist(ws As Worksheet, colMap As Object, _
             ws.Columns(statusPos).Insert Shift:=xlToRight
             ws.Cells(headerRow, statusPos).Value = "MATCH_STATUS"
             ws.Cells(headerRow, statusPos).Font.Bold = True
-            ws.Cells(headerRow, statusPos).Interior.Color = RGB(100, 100, 180)
+            ws.Cells(headerRow, statusPos).Interior.Color = RGB(91, 115, 150)
             ws.Cells(headerRow, statusPos).Font.Color = RGB(255, 255, 255)
             ws.Cells(headerRow, statusPos).HorizontalAlignment = xlCenter
             existingPos.Add "MATCH_STATUS", statusPos
@@ -2457,7 +2457,7 @@ Private Sub EnsureWriteColumnsExist(ws As Worksheet, colMap As Object, _
             ws.Columns(sourcePos).Insert Shift:=xlToRight
             ws.Cells(headerRow, sourcePos).Value = "SOURCE_FILE"
             ws.Cells(headerRow, sourcePos).Font.Bold = True
-            ws.Cells(headerRow, sourcePos).Interior.Color = RGB(100, 100, 180)
+            ws.Cells(headerRow, sourcePos).Interior.Color = RGB(91, 115, 150)
             ws.Cells(headerRow, sourcePos).Font.Color = RGB(255, 255, 255)
             ws.Cells(headerRow, sourcePos).HorizontalAlignment = xlCenter
             existingPos.Add "SOURCE_FILE", sourcePos
@@ -2470,7 +2470,7 @@ Private Sub EnsureWriteColumnsExist(ws As Worksheet, colMap As Object, _
             ws.Columns(targetPos).Insert Shift:=xlToRight
             ws.Cells(headerRow, targetPos).Value = "TARGET_FILE"
             ws.Cells(headerRow, targetPos).Font.Bold = True
-            ws.Cells(headerRow, targetPos).Interior.Color = RGB(100, 100, 180)
+            ws.Cells(headerRow, targetPos).Interior.Color = RGB(91, 115, 150)
             ws.Cells(headerRow, targetPos).Font.Color = RGB(255, 255, 255)
             ws.Cells(headerRow, targetPos).HorizontalAlignment = xlCenter
             existingPos.Add "TARGET_FILE", targetPos
@@ -2595,31 +2595,31 @@ Private Sub EnsureWriteColumnsExist(ws As Worksheet, colMap As Object, _
         ' Add headers at the new position
         ws.Cells(headerRow, insertAtCol).Value = "MATCHED_ID"
         ws.Cells(headerRow, insertAtCol).Font.Bold = True
-        ws.Cells(headerRow, insertAtCol).Interior.Color = RGB(100, 100, 180)
+        ws.Cells(headerRow, insertAtCol).Interior.Color = RGB(91, 115, 150)
         ws.Cells(headerRow, insertAtCol).Font.Color = RGB(255, 255, 255)
         ws.Cells(headerRow, insertAtCol).HorizontalAlignment = xlCenter
 
         ws.Cells(headerRow, insertAtCol + 1).Value = "MATCH_TYPE"
         ws.Cells(headerRow, insertAtCol + 1).Font.Bold = True
-        ws.Cells(headerRow, insertAtCol + 1).Interior.Color = RGB(100, 100, 180)
+        ws.Cells(headerRow, insertAtCol + 1).Interior.Color = RGB(91, 115, 150)
         ws.Cells(headerRow, insertAtCol + 1).Font.Color = RGB(255, 255, 255)
         ws.Cells(headerRow, insertAtCol + 1).HorizontalAlignment = xlCenter
 
         ws.Cells(headerRow, insertAtCol + 2).Value = "MATCH_STATUS"
         ws.Cells(headerRow, insertAtCol + 2).Font.Bold = True
-        ws.Cells(headerRow, insertAtCol + 2).Interior.Color = RGB(100, 100, 180)
+        ws.Cells(headerRow, insertAtCol + 2).Interior.Color = RGB(91, 115, 150)
         ws.Cells(headerRow, insertAtCol + 2).Font.Color = RGB(255, 255, 255)
         ws.Cells(headerRow, insertAtCol + 2).HorizontalAlignment = xlCenter
 
         ws.Cells(headerRow, insertAtCol + 3).Value = "SOURCE_FILE"
         ws.Cells(headerRow, insertAtCol + 3).Font.Bold = True
-        ws.Cells(headerRow, insertAtCol + 3).Interior.Color = RGB(100, 100, 180)
+        ws.Cells(headerRow, insertAtCol + 3).Interior.Color = RGB(91, 115, 150)
         ws.Cells(headerRow, insertAtCol + 3).Font.Color = RGB(255, 255, 255)
         ws.Cells(headerRow, insertAtCol + 3).HorizontalAlignment = xlCenter
 
         ws.Cells(headerRow, insertAtCol + 4).Value = "TARGET_FILE"
         ws.Cells(headerRow, insertAtCol + 4).Font.Bold = True
-        ws.Cells(headerRow, insertAtCol + 4).Interior.Color = RGB(100, 100, 180)
+        ws.Cells(headerRow, insertAtCol + 4).Interior.Color = RGB(91, 115, 150)
         ws.Cells(headerRow, insertAtCol + 4).Font.Color = RGB(255, 255, 255)
         ws.Cells(headerRow, insertAtCol + 4).HorizontalAlignment = xlCenter
 
@@ -2648,7 +2648,7 @@ Private Sub EnsureWriteColumnsExist(ws As Worksheet, colMap As Object, _
     ' Add MATCHED_ID at insertAtCol (now there's an empty column there)
     ws.Cells(headerRow, insertAtCol).Value = "MATCHED_ID"
     ws.Cells(headerRow, insertAtCol).Font.Bold = True
-    ws.Cells(headerRow, insertAtCol).Interior.Color = RGB(100, 100, 180)
+    ws.Cells(headerRow, insertAtCol).Interior.Color = RGB(91, 115, 150)
     ws.Cells(headerRow, insertAtCol).Font.Color = RGB(255, 255, 255)
     ws.Cells(headerRow, insertAtCol).HorizontalAlignment = xlCenter
 
@@ -2658,7 +2658,7 @@ Private Sub EnsureWriteColumnsExist(ws As Worksheet, colMap As Object, _
     On Error GoTo 0
     ws.Cells(headerRow, insertAtCol + 1).Value = "MATCH_TYPE"
     ws.Cells(headerRow, insertAtCol + 1).Font.Bold = True
-    ws.Cells(headerRow, insertAtCol + 1).Interior.Color = RGB(100, 100, 180)
+    ws.Cells(headerRow, insertAtCol + 1).Interior.Color = RGB(91, 115, 150)
     ws.Cells(headerRow, insertAtCol + 1).Font.Color = RGB(255, 255, 255)
     ws.Cells(headerRow, insertAtCol + 1).HorizontalAlignment = xlCenter
 
@@ -2668,7 +2668,7 @@ Private Sub EnsureWriteColumnsExist(ws As Worksheet, colMap As Object, _
     On Error GoTo 0
     ws.Cells(headerRow, insertAtCol + 2).Value = "MATCH_STATUS"
     ws.Cells(headerRow, insertAtCol + 2).Font.Bold = True
-    ws.Cells(headerRow, insertAtCol + 2).Interior.Color = RGB(100, 100, 180)
+    ws.Cells(headerRow, insertAtCol + 2).Interior.Color = RGB(91, 115, 150)
     ws.Cells(headerRow, insertAtCol + 2).Font.Color = RGB(255, 255, 255)
     ws.Cells(headerRow, insertAtCol + 2).HorizontalAlignment = xlCenter
 
@@ -2678,14 +2678,14 @@ Private Sub EnsureWriteColumnsExist(ws As Worksheet, colMap As Object, _
     On Error GoTo 0
     ws.Cells(headerRow, insertAtCol + 3).Value = "SOURCE_FILE"
     ws.Cells(headerRow, insertAtCol + 3).Font.Bold = True
-    ws.Cells(headerRow, insertAtCol + 3).Interior.Color = RGB(100, 100, 180)
+    ws.Cells(headerRow, insertAtCol + 3).Interior.Color = RGB(91, 115, 150)
     ws.Cells(headerRow, insertAtCol + 3).Font.Color = RGB(255, 255, 255)
     ws.Cells(headerRow, insertAtCol + 3).HorizontalAlignment = xlCenter
 
     ' Insert column for TARGET_FILE and add header (no insert needed, just write to last position)
     ws.Cells(headerRow, insertAtCol + 4).Value = "TARGET_FILE"
     ws.Cells(headerRow, insertAtCol + 4).Font.Bold = True
-    ws.Cells(headerRow, insertAtCol + 4).Interior.Color = RGB(100, 100, 180)
+    ws.Cells(headerRow, insertAtCol + 4).Interior.Color = RGB(91, 115, 150)
     ws.Cells(headerRow, insertAtCol + 4).Font.Color = RGB(255, 255, 255)
     ws.Cells(headerRow, insertAtCol + 4).HorizontalAlignment = xlCenter
 
@@ -2849,7 +2849,7 @@ Private Sub AddMatchColumnsAtCorrectPosition(ws As Worksheet, ByVal dataHeaderRo
         DebugPrint "AddMatchColumnsAtCorrectPosition: MATCHED_ID not found, writing to column 1"
         ws.Cells(headerRowActual, 1).Value = "MATCHED_ID"
         ws.Cells(headerRowActual, 1).Font.Bold = True
-        ws.Cells(headerRowActual, 1).Interior.Color = RGB(100, 100, 180)
+        ws.Cells(headerRowActual, 1).Interior.Color = RGB(91, 115, 150)
         ws.Cells(headerRowActual, 1).Font.Color = RGB(255, 255, 255)
         ws.Cells(headerRowActual, 1).HorizontalAlignment = xlCenter
         ws.Columns(1).ColumnWidth = Len("MATCHED_ID") * 3.5 + 2
@@ -2890,7 +2890,7 @@ Private Sub AddMatchColumnsAtCorrectPosition(ws As Worksheet, ByVal dataHeaderRo
             DebugPrint "AddMatchColumnsAtCorrectPosition: " & headerName & " missing, writing to column " & targetCol
             ws.Cells(headerRowActual, targetCol).Value = headerName
             ws.Cells(headerRowActual, targetCol).Font.Bold = True
-            ws.Cells(headerRowActual, targetCol).Interior.Color = RGB(100, 100, 180)
+            ws.Cells(headerRowActual, targetCol).Interior.Color = RGB(91, 115, 150)
             ws.Cells(headerRowActual, targetCol).Font.Color = RGB(255, 255, 255)
             ws.Cells(headerRowActual, targetCol).HorizontalAlignment = xlCenter
             ws.Columns(targetCol).ColumnWidth = Len(headerName) * 3.5 + 2
@@ -3357,7 +3357,7 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
                 ws.Columns(1).Insert Shift:=xlToRight
                 ws.Cells(g_DataHeaderRow, 1).Value = "MATCHED_ID"
                 ws.Cells(g_DataHeaderRow, 1).Font.Bold = True
-                ws.Cells(g_DataHeaderRow, 1).Interior.Color = RGB(100, 100, 180)
+                ws.Cells(g_DataHeaderRow, 1).Interior.Color = RGB(91, 115, 150)
                 ws.Cells(g_DataHeaderRow, 1).Font.Color = RGB(255, 255, 255)
                 ws.Cells(g_DataHeaderRow, 1).HorizontalAlignment = xlCenter
                 matchedIdCol = 1
@@ -3380,7 +3380,7 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
                 ' Add MATCH_TYPE header at the actual data header row
                 ws.Cells(g_DataHeaderRow, newColSafe).value = "MATCH_TYPE"
                 ws.Cells(g_DataHeaderRow, newColSafe).Font.Bold = True
-                ws.Cells(g_DataHeaderRow, newColSafe).Interior.Color = RGB(100, 100, 180)
+                ws.Cells(g_DataHeaderRow, newColSafe).Interior.Color = RGB(91, 115, 150)
                 ws.Cells(g_DataHeaderRow, newColSafe).Font.Color = RGB(255, 255, 255)
                 ws.Cells(g_DataHeaderRow, newColSafe).HorizontalAlignment = xlCenter
 
@@ -3388,7 +3388,7 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
                 If g_DataHeaderRow > UI_COLHEADER_ROW Then
                     ws.Cells(UI_COLHEADER_ROW, newColSafe).value = "MATCH_TYPE"
                     ws.Cells(UI_COLHEADER_ROW, newColSafe).Font.Bold = True
-                    ws.Cells(UI_COLHEADER_ROW, newColSafe).Interior.Color = RGB(100, 100, 180)
+                    ws.Cells(UI_COLHEADER_ROW, newColSafe).Interior.Color = RGB(91, 115, 150)
                     ws.Cells(UI_COLHEADER_ROW, newColSafe).Font.Color = RGB(255, 255, 255)
                     ws.Cells(UI_COLHEADER_ROW, newColSafe).HorizontalAlignment = xlCenter
                 End If
@@ -3439,7 +3439,7 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
                     ' Add MATCH_STATUS header
                     ws.Cells(g_DataHeaderRow, newColSafe).value = "MATCH_STATUS"
                     ws.Cells(g_DataHeaderRow, newColSafe).Font.Bold = True
-                    ws.Cells(g_DataHeaderRow, newColSafe).Interior.Color = RGB(100, 100, 180)
+                    ws.Cells(g_DataHeaderRow, newColSafe).Interior.Color = RGB(91, 115, 150)
                     ws.Cells(g_DataHeaderRow, newColSafe).Font.Color = RGB(255, 255, 255)
                     ws.Cells(g_DataHeaderRow, newColSafe).HorizontalAlignment = xlCenter
                 End If
@@ -4203,7 +4203,11 @@ Public Sub ClearMatchContent()
         If cell.Row >= UI_FIRST_MATCH_ROW And cell.Row < g_DataHeaderRow Then
             If UCase(Trim(CStr(cell.Value))) = "X" Then
                 cell.ClearContents
-                cell.Interior.ColorIndex = xlNone
+                If cell.Row Mod 2 = 0 Then
+                    cell.Interior.Color = RGB(214, 224, 240)
+                Else
+                    cell.Interior.Color = RGB(237, 242, 250)
+                End If
             End If
         End If
     Next cell
@@ -4447,8 +4451,8 @@ Private Sub BuildUIFreshFixed(ws As Worksheet, lastCol As Long, matches As Colle
     ws.Cells(UI_COLHEADER_ROW, 2).value = "Match Type"
     ws.Cells(UI_COLHEADER_ROW, 1).Font.Bold = True
     ws.Cells(UI_COLHEADER_ROW, 2).Font.Bold = True
-    ws.Cells(UI_COLHEADER_ROW, 1).Interior.Color = RGB(100, 100, 180)
-    ws.Cells(UI_COLHEADER_ROW, 2).Interior.Color = RGB(100, 100, 180)
+    ws.Cells(UI_COLHEADER_ROW, 1).Interior.Color = RGB(91, 115, 150)
+    ws.Cells(UI_COLHEADER_ROW, 2).Interior.Color = RGB(91, 115, 150)
     ws.Cells(UI_COLHEADER_ROW, 1).Font.Color = RGB(255, 255, 255)
     ws.Cells(UI_COLHEADER_ROW, 2).Font.Color = RGB(255, 255, 255)
     ws.Cells(UI_COLHEADER_ROW, 1).HorizontalAlignment = xlCenter
@@ -4473,9 +4477,15 @@ Private Sub BuildUIFreshFixed(ws As Worksheet, lastCol As Long, matches As Colle
         destRange.Value = srcRange.Value
         destRange.Font.Bold = True
         destRange.Font.Color = RGB(255, 255, 255)
-        destRange.Interior.Color = RGB(100, 100, 180)
         destRange.HorizontalAlignment = xlCenter
         destRange.WrapText = True
+        ' Columns 3-5 (mandatory area) get medium slate, columns 6+ get dark blue-grey
+        If lastCol >= 3 Then
+            ws.Range(ws.Cells(UI_COLHEADER_ROW, 3), ws.Cells(UI_COLHEADER_ROW, 5)).Interior.Color = RGB(91, 115, 150)
+        End If
+        If lastCol >= 6 Then
+            ws.Range(ws.Cells(UI_COLHEADER_ROW, 6), ws.Cells(UI_COLHEADER_ROW, lastCol)).Interior.Color = RGB(68, 84, 106)
+        End If
     End If
 
     ' Set column widths based on UI header row text length — not data rows
@@ -4680,9 +4690,9 @@ Private Sub FormatMatchBoxFixed(ws As Worksheet, lastCol As Long)
     For r = UI_FIRST_MATCH_ROW To endRow
         Set rowRng = ws.Range(ws.Cells(r, 3), ws.Cells(r, lastCol))
         If r Mod 2 = 0 Then
-            rowRng.Interior.Color = RGB(245, 245, 245)
+            rowRng.Interior.Color = RGB(214, 224, 240)
         Else
-            rowRng.Interior.Color = RGB(255, 255, 255)
+            rowRng.Interior.Color = RGB(237, 242, 250)
         End If
     Next r
 
@@ -7063,6 +7073,14 @@ Public Sub PreserveAndRebuildUI()
         End If
     End If
 
+    ' Freeze panes at first match rule row, column 6
+    On Error Resume Next
+    ws.Activate
+    ActiveWindow.FreezePanes = False
+    ws.Cells(UI_FIRST_MATCH_ROW, 6).Select
+    ActiveWindow.FreezePanes = True
+    On Error GoTo 0
+
     ' Restore performance settings
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
@@ -7183,6 +7201,9 @@ Public Sub LoadSourceFile()
     Dim dataCol As Long
     Dim consecutiveEmpty As Long
     Dim clearLastCol As Long
+    Dim uiLastCol As Long
+    Dim uiClearCol As Long
+    Dim staleStartCol As Long
     Dim scanCeiling As Long
     Dim selectedSourceSheet As Worksheet
     Dim mandatoryNames(4) As String
@@ -7197,6 +7218,7 @@ Public Sub LoadSourceFile()
     Dim destCol As Long
     Dim mCol As Long
     Dim syncCol As Long
+    Dim matchRuleRow As Long
     Application.ScreenUpdating = False
     On Error GoTo ErrorHandler
 
@@ -7347,11 +7369,14 @@ Public Sub LoadSourceFile()
         Application.DisplayAlerts = True
     End If
 
+    ' Clear any stale formatting on the data header row before writing new headers
+    ws.Rows(pasteRow).ClearFormats
+
     ' Write mandatory headers to columns 1-5 of pasteRow
     For mCol = 0 To 4
         ws.Cells(pasteRow, mCol + 1).Value = mandatoryNames(mCol)
         ws.Cells(pasteRow, mCol + 1).Font.Bold = True
-        ws.Cells(pasteRow, mCol + 1).Interior.Color = RGB(100, 100, 180)
+        ws.Cells(pasteRow, mCol + 1).Interior.Color = RGB(91, 115, 150)
         ws.Cells(pasteRow, mCol + 1).Font.Color = RGB(255, 255, 255)
         ws.Cells(pasteRow, mCol + 1).HorizontalAlignment = xlCenter
         ws.Columns(mCol + 1).ColumnWidth = Len(mandatoryNames(mCol)) * 1.8 + 2
@@ -7360,14 +7385,72 @@ Public Sub LoadSourceFile()
     ' Paste filtered source data starting at column 6
     ws.Range(ws.Cells(pasteRow, 6), ws.Cells(pasteRow + sourceLastRow - 1, 5 + filteredColCount)).Value = filteredData
 
+    ' Find previous UI column header row width before clearing — check content or formatting
+    uiLastCol = 0
+    For scanCol = 6 To 500
+        If Trim(CStr(ws.Cells(UI_COLHEADER_ROW, scanCol).Value)) <> "" Then
+            uiLastCol = scanCol
+        ElseIf ws.Cells(UI_COLHEADER_ROW, scanCol).Interior.ColorIndex <> xlNone Then
+            uiLastCol = scanCol
+        End If
+    Next scanCol
+    uiClearCol = uiLastCol
+    If clearLastCol > uiClearCol Then uiClearCol = clearLastCol
+
+    ' Clear stale UI zone columns beyond new data width — only columns past the new range
+    staleStartCol = 6 + filteredColCount
+    If uiClearCol >= staleStartCol And g_DataHeaderRow > 0 Then
+        ws.Range(ws.Cells(UI_COLHEADER_ROW, staleStartCol), ws.Cells(g_DataHeaderRow - 1, uiClearCol)).ClearContents
+        ws.Range(ws.Cells(UI_COLHEADER_ROW, staleStartCol), ws.Cells(g_DataHeaderRow - 1, uiClearCol)).ClearFormats
+    End If
+
     ' Sync UI column header row columns 6+ to match data header row columns 6+
     For syncCol = 6 To 5 + filteredColCount
         ws.Cells(UI_COLHEADER_ROW, syncCol).Value = ws.Cells(pasteRow, syncCol).Value
+        ws.Cells(UI_COLHEADER_ROW, syncCol).Font.Bold = True
+        ws.Cells(UI_COLHEADER_ROW, syncCol).Interior.Color = RGB(68, 84, 106)
+        ws.Cells(UI_COLHEADER_ROW, syncCol).Font.Color = RGB(255, 255, 255)
+        ws.Cells(UI_COLHEADER_ROW, syncCol).HorizontalAlignment = xlCenter
+        ' Apply same color to data header row
+        ws.Cells(pasteRow, syncCol).Interior.Color = RGB(68, 84, 106)
+        ws.Cells(pasteRow, syncCol).Font.Bold = True
+        ws.Cells(pasteRow, syncCol).Font.Color = RGB(255, 255, 255)
+        ws.Cells(pasteRow, syncCol).HorizontalAlignment = xlCenter
     Next syncCol
+
+    ' Clear X marks and apply alternating colors and borders to match rule rows
+    For matchRuleRow = UI_FIRST_MATCH_ROW To pasteRow - 1
+        For syncCol = 6 To 5 + filteredColCount
+            If UCase(Trim(CStr(ws.Cells(matchRuleRow, syncCol).Value))) = "X" Then
+                ws.Cells(matchRuleRow, syncCol).ClearContents
+            End If
+            If matchRuleRow Mod 2 = 0 Then
+                ws.Cells(matchRuleRow, syncCol).Interior.Color = RGB(214, 224, 240)
+            Else
+                ws.Cells(matchRuleRow, syncCol).Interior.Color = RGB(237, 242, 250)
+            End If
+            ws.Cells(matchRuleRow, syncCol).Borders(xlEdgeBottom).LineStyle = xlContinuous
+            ws.Cells(matchRuleRow, syncCol).Borders(xlEdgeBottom).Weight = xlThin
+            ws.Cells(matchRuleRow, syncCol).Borders(xlEdgeRight).LineStyle = xlContinuous
+            ws.Cells(matchRuleRow, syncCol).Borders(xlEdgeRight).Weight = xlThin
+        Next syncCol
+    Next matchRuleRow
     ' Set column widths based on header name length only — not data rows
     For syncCol = 6 To 5 + filteredColCount
         ws.Columns(syncCol).ColumnWidth = Len(CStr(ws.Cells(UI_COLHEADER_ROW, syncCol).Value)) * 1.2 + 2
     Next syncCol
+
+    ' Apply AutoFilter to data header row
+    On Error Resume Next
+    ws.AutoFilterMode = False
+    ws.Range(ws.Cells(pasteRow, 1), ws.Cells(pasteRow, 5 + filteredColCount)).AutoFilter
+    On Error GoTo 0
+
+    ' Freeze panes at first match rule row, column 6
+    ws.Activate
+    ActiveWindow.FreezePanes = False
+    ws.Cells(UI_FIRST_MATCH_ROW, 6).Select
+    ActiveWindow.FreezePanes = True
 
     ' Reinitialize and rebuild UI
     g_DataHeaderRow = 0

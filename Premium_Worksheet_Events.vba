@@ -129,7 +129,11 @@ Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean
     Application.EnableEvents = False
     If Trim(UCase(Target.Value)) = "X" Then
         Target.ClearContents
-        Target.Interior.Color = RGB(255, 255, 200)
+        If Target.Row Mod 2 = 0 Then
+            Target.Interior.Color = RGB(214, 224, 240)
+        Else
+            Target.Interior.Color = RGB(237, 242, 250)
+        End If
     Else
         Target.Value = "X"
         Target.Interior.Color = RGB(255, 0, 0)
