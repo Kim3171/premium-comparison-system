@@ -3022,7 +3022,7 @@ Private Sub ApplyMatchColumnColors(ws As Worksheet, ByVal dataHeaderRow As Long)
         Next scanR
         If colLastRow > lastRowScan Then lastRowScan = colLastRow
     Next scanCol
-    If lastRowScan = 0 Then lastRowScan = dataHeaderRow + 1
+    If lastRowScan <= dataHeaderRow Then GoTo SkipMatchColors
 
     ' Apply alternating colors to MATCH columns only
     For fmtCol = 1 To lastColScan
@@ -3032,7 +3032,7 @@ Private Sub ApplyMatchColumnColors(ws As Worksheet, ByVal dataHeaderRow As Long)
            cellVal = "MATCH_STATUS" Or cellVal = "MATCHSTATUS" Or _
            cellVal = "SOURCE_FILE" Or cellVal = "SOURCEFILE" Or _
            cellVal = "TARGET_FILE" Or cellVal = "TARGETFILE" Then
-            If lastRowScan > dataHeaderRow Then
+            If lastRowScan > dataHeaderRow + 1 Then
                 Set colorRange = ws.Range(ws.Cells(dataHeaderRow + 1, fmtCol), ws.Cells(lastRowScan, fmtCol))
                 colorRange.Interior.Color = RGB(255, 255, 255)
                 For rowIdx = dataHeaderRow + 2 To lastRowScan Step 2
@@ -3041,6 +3041,7 @@ Private Sub ApplyMatchColumnColors(ws As Worksheet, ByVal dataHeaderRow As Long)
             End If
         End If
     Next fmtCol
+    SkipMatchColors:
 End Sub
 
 '===============================================================================
@@ -7845,6 +7846,14 @@ Public Sub ClearAllData()
             ws.Range(ws.Rows(g_DataHeaderRow + 1), ws.Rows(lastRow)).ClearFormats
             Application.DisplayAlerts = True
         End If
+        ' Reset first data row cols 1-5 to default appearance
+        With ws.Range(ws.Cells(g_DataHeaderRow + 1, 1), ws.Cells(g_DataHeaderRow + 1, 5))
+            .Interior.ColorIndex = xlNone
+            .Borders(xlEdgeTop).LineStyle = xlNone
+            .Borders(xlEdgeBottom).LineStyle = xlNone
+            .Borders(xlEdgeLeft).LineStyle = xlNone
+            .Borders(xlEdgeRight).LineStyle = xlNone
+        End With
     End If
 
     ' Clear TARGET_DATA sheet
