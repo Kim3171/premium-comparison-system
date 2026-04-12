@@ -606,6 +606,13 @@ Public Sub CompareAssets()
     Dim preColKey As Variant
     Dim tempFoundIdx As Long
     Dim targetIdColIdx As Long
+    Dim fastKeyIdxs() As Long
+    Dim fastKeyColCounts() As Long
+    Dim fastKeyArr() As Long
+    Dim preM As Long
+    Dim preColName As Variant
+    Dim preNorm As String
+    Dim preCount As Long
 
     ' SAFE MODE GUARD - Block destructive operations in SafeMode
     If g_SafeMode Then
@@ -825,6 +832,34 @@ Public Sub CompareAssets()
     Dim targetLastRow As Long
     targetLastRow = UBound(targetData, 1)
 
+    ' PRE-COMPUTE: Find leftmost target ID column index once (avoids colMap enumeration per row)
+    targetIdColIdx = 0
+    tempFoundIdx = 999999
+    For Each preColKey In targetCols.keys
+        If UCase(preColKey) <> "MATCHED_ID" And UCase(preColKey) <> "MATCH_TYPE" And _
+           UCase(preColKey) <> "MATCH_STATUS" And UCase(preColKey) <> "SOURCE_FILE" And _
+           UCase(preColKey) <> "TARGET_FILE" And UCase(preColKey) <> "MATCHED_ASSETID" Then
+            If targetCols(preColKey) < tempFoundIdx Then
+                tempFoundIdx = targetCols(preColKey)
+                targetIdColIdx = targetCols(preColKey)
+            End If
+        End If
+    Next preColKey
+
+    ' PRE-COMPUTE: Find leftmost source ID column index once (avoids colMap enumeration per row)
+    sourceIdColIdx = 0
+    tempFoundIdx = 999999
+    For Each preColKey In sourceCols.keys
+        If UCase(preColKey) <> "MATCHED_ID" And UCase(preColKey) <> "MATCH_TYPE" And _
+           UCase(preColKey) <> "MATCH_STATUS" And UCase(preColKey) <> "SOURCE_FILE" And _
+           UCase(preColKey) <> "TARGET_FILE" And UCase(preColKey) <> "MATCHED_ASSETID" Then
+            If sourceCols(preColKey) < tempFoundIdx Then
+                tempFoundIdx = sourceCols(preColKey)
+                sourceIdColIdx = sourceCols(preColKey)
+            End If
+        End If
+    Next preColKey
+
     For targetRow = 2 To targetLastRow
         For m = 1 To matchDefs.Count
             Set matchDef = matchDefs(m)
@@ -880,34 +915,6 @@ Public Sub CompareAssets()
 
     targetWorkbookName = GetWorkbookName(g_TargetWorkbook)
     sourceWorkbookName = GetWorkbookName(g_SourceWorkbook)
-
-    ' PRE-COMPUTE: Find leftmost target ID column index once (avoids colMap enumeration per row)
-    targetIdColIdx = 0
-    tempFoundIdx = 999999
-    For Each preColKey In targetCols.keys
-        If UCase(preColKey) <> "MATCHED_ID" And UCase(preColKey) <> "MATCH_TYPE" And _
-           UCase(preColKey) <> "MATCH_STATUS" And UCase(preColKey) <> "SOURCE_FILE" And _
-           UCase(preColKey) <> "TARGET_FILE" And UCase(preColKey) <> "MATCHED_ASSETID" Then
-            If targetCols(preColKey) < tempFoundIdx Then
-                tempFoundIdx = targetCols(preColKey)
-                targetIdColIdx = targetCols(preColKey)
-            End If
-        End If
-    Next preColKey
-
-    ' PRE-COMPUTE: Find leftmost source ID column index once (avoids colMap enumeration per row)
-    sourceIdColIdx = 0
-    tempFoundIdx = 999999
-    For Each preColKey In sourceCols.keys
-        If UCase(preColKey) <> "MATCHED_ID" And UCase(preColKey) <> "MATCH_TYPE" And _
-           UCase(preColKey) <> "MATCH_STATUS" And UCase(preColKey) <> "SOURCE_FILE" And _
-           UCase(preColKey) <> "TARGET_FILE" And UCase(preColKey) <> "MATCHED_ASSETID" Then
-            If sourceCols(preColKey) < tempFoundIdx Then
-                tempFoundIdx = sourceCols(preColKey)
-                sourceIdColIdx = sourceCols(preColKey)
-            End If
-        End If
-    Next preColKey
 
     ' OPTIMIZATION: Pre-calculate values outside loop
     Dim sourceLastRow As Long
@@ -6320,6 +6327,46 @@ Public Sub BuildFullUI()
 
     g_MacroRunning = False
 End Sub
+
+'===============================================================================
+' BuildKeyFast - Fast key builder using pre-resolved column index array
+' Replaces BuildKeyFromRow for performance-critical loops
+'===============================================================================
+Private Function BuildKeyFast(data As Variant, rowIndex As Long, colIdxArr() As Long, colCount As Long) As String
+    Dim parts() As String
+    Dim partCount As Long
+    Dim j As Long
+    Dim val As String
+    Dim result As String
+
+    If colCount = 0 Then
+        BuildKeyFast = ""
+        Exit Function
+    End If
+
+    partCount = 0
+    ReDim parts(1 To colCount)
+
+    For j = 1 To colCount
+        val = SafeCleanString(data(rowIndex, colIdxArr(j)))
+        If val <> "" Then
+            partCount = partCount + 1
+            parts(partCount) = val
+        End If
+    Next j
+
+    If partCount = 0 Then
+        BuildKeyFast = ""
+    ElseIf partCount = 1 Then
+        BuildKeyFast = parts(1)
+    Else
+        result = parts(1)
+        For j = 2 To partCount
+            result = result & "|" & parts(j)
+        Next j
+        BuildKeyFast = result
+    End If
+End Function
 
 '===============================================================================
 ' CORE MATCHING FUNCTIONS
