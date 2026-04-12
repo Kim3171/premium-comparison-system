@@ -86,7 +86,7 @@ Private Const MATCH_COLUMNS As String = "MATCHED_ID,MATCHED_ASSETID,MATCH_ID,MAT
 ' DEBUGGING SYSTEM
 '===============================================================================
 
-Private Const DEBUG_MODE As Boolean = True  ' Set to False in production
+Private Const DEBUG_MODE As Boolean = False  ' Set to False in production
 
 Public Sub DebugPrint(msg As String)
     ' Layer-aware debug output
