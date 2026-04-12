@@ -3497,6 +3497,9 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
         lastDataRow = dataHeaderRow + 1
     End If
 
+    ' Only fill ~NULL~ if actual source data exists below header
+    If Not foundLastRow Then GoTo SkipNullFill
+
     For Each req In matchResultCols
         matchColIdx = 0
         For checkCol = 1 To 100
@@ -3515,6 +3518,8 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
             Next scanRow
         End If
     Next req
+
+    SkipNullFill:
 
     ' After adding columns, recalculate lastDataCol
     lastDataCol = GetLastColumn(ws, dataHeaderRow)
@@ -7774,6 +7779,8 @@ Public Sub ClearAllData()
     Dim findCol As Long
     Dim nullCol As Long
     Dim lastDataCol As Long
+    Dim nullLastRow As Long
+    Dim nullConsecEmpty As Long
 
     ' Confirm before clearing
     response = MsgBox("This will clear all source data, target data, and reset match rules." & vbCrLf & vbCrLf & _
@@ -7817,6 +7824,21 @@ Public Sub ClearAllData()
                 End If
             Next scanRow
         End If
+        ' Also check column 2 for ~NULL~ placeholders from Execute Match
+        nullLastRow = g_DataHeaderRow
+        nullConsecEmpty = 0
+        For scanRow = g_DataHeaderRow + 1 To g_DataHeaderRow + 500000
+            If scanRow > ws.Rows.Count Then Exit For
+            If Trim(CStr(ws.Cells(scanRow, 2).Value)) = "" Then
+                nullConsecEmpty = nullConsecEmpty + 1
+                If nullConsecEmpty >= 10 Then Exit For
+            Else
+                nullConsecEmpty = 0
+                nullLastRow = scanRow
+            End If
+        Next scanRow
+        If nullLastRow > lastRow Then lastRow = nullLastRow
+
         If lastRow > g_DataHeaderRow Then
             Application.DisplayAlerts = False
             ws.Range(ws.Rows(g_DataHeaderRow + 1), ws.Rows(lastRow)).ClearContents
