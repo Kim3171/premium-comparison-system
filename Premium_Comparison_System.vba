@@ -3299,6 +3299,8 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
     Dim headerVal As String
     Dim scanRow As Long
     Dim foundLastRow As Boolean
+    Dim hasDataAtFallbackRow As Boolean
+    Dim fallbackCheckCol As Long
 
     usingUserSelectedRow = (userSelectedHeaderRow > 0)
 
@@ -3363,6 +3365,26 @@ Public Sub RebuildMatchBuilderUI(Optional ByVal userSelectedHeaderRow As Long = 
     Else
         detectedRowBeforeInsert = g_DataHeaderRow
         DebugPrint "RebuildMatchBuilderUI: detectedRowBeforeInsert = " & detectedRowBeforeInsert
+
+        ' Guard: if detectedRowBeforeInsert came from fallback (FIXED_DATA_HEADER_ROW),
+        ' verify actual data exists at that row before proceeding
+        If detectedRowBeforeInsert = FIXED_DATA_HEADER_ROW Then
+            hasDataAtFallbackRow = False
+            For fallbackCheckCol = 6 To 50
+                If Trim(CStr(ws.Cells(detectedRowBeforeInsert, fallbackCheckCol).Value)) <> "" Then
+                    hasDataAtFallbackRow = True
+                    Exit For
+                End If
+            Next fallbackCheckCol
+            If Not hasDataAtFallbackRow Then
+                MsgBox "No source data found on this worksheet." & vbCrLf & vbCrLf & _
+                       "Please click 'Load Source' to load your data before building the UI.", _
+                       vbExclamation, "Load Source First"
+                DebugPrint "RebuildMatchBuilderUI: ABORTED - no data at fallback row, user must load source first"
+                Application.DisplayAlerts = True
+                GoTo CleanExit
+            End If
+        End If
 
         ' If g_DataHeaderRow wasn't set, detect it now (READ ONLY)
         If detectedRowBeforeInsert <= 1 Then
