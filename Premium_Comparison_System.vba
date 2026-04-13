@@ -7831,7 +7831,7 @@ Public Sub ExportResults()
     Next scanRow
 
     lastSourceCol = 0
-    For scanCol = 1 To 200
+    For scanCol = 1 To 500
         If Trim(CStr(wsSource.Cells(g_DataHeaderRow, scanCol).Value)) <> "" Then
             lastSourceCol = scanCol
         End If
@@ -7856,7 +7856,7 @@ Public Sub ExportResults()
     Next scanRow
 
     lastTargetCol = 0
-    For scanCol = 1 To 200
+    For scanCol = 1 To 500
         If Trim(CStr(wsTarget.Cells(1, scanCol).Value)) <> "" Then
             lastTargetCol = scanCol
         End If
