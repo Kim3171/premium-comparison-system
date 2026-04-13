@@ -606,13 +606,16 @@ Public Sub CompareAssets()
     Dim preColKey As Variant
     Dim tempFoundIdx As Long
     Dim targetIdColIdx As Long
-    Dim fastKeyIdxs() As Long
+    Dim fastKeyIdxs() As Variant
     Dim fastKeyColCounts() As Long
-    Dim fastKeyArr() As Long
+    Dim fastKeyArr As Variant
     Dim preM As Long
     Dim preColName As Variant
     Dim preNorm As String
     Dim preCount As Long
+    Dim mDefCount As Long
+    Dim srcIdxArr() As Long
+    Dim tgtIdxArr() As Long
 
     ' SAFE MODE GUARD - Block destructive operations in SafeMode
     If g_SafeMode Then
@@ -915,6 +918,71 @@ Public Sub CompareAssets()
 
     targetWorkbookName = GetWorkbookName(g_TargetWorkbook)
     sourceWorkbookName = GetWorkbookName(g_SourceWorkbook)
+
+    ' PRE-COMPUTE: Resolve column indices for each match definition
+    ' Allows BuildKeyFast to replace BuildKeyFromRow in both loops
+    mDefCount = matchDefs.Count
+    ReDim fastKeyIdxs(1 To mDefCount, 1 To 2)
+    ReDim fastKeyColCounts(1 To mDefCount)  ' (matchDef, 1=source/2=target) → Long() array stored as Variant
+
+    For preM = 1 To mDefCount
+        Set matchDef = matchDefs(preM)
+
+        ' Resolve SOURCE column indices for this match definition
+        preCount = 0
+        For Each preColName In matchDef("Columns")
+            preNorm = UltraNormalize(CStr(preColName))
+            If preNorm <> "" And sourceCols.exists(preNorm) Then
+                preCount = preCount + 1
+            ElseIf sourceCols.exists(CStr(preColName)) Then
+                preCount = preCount + 1
+            End If
+        Next preColName
+
+        ReDim srcIdxArr(1 To IIf(preCount > 0, preCount, 1))
+        preCount = 0
+        For Each preColName In matchDef("Columns")
+            preNorm = UltraNormalize(CStr(preColName))
+            If preNorm <> "" And sourceCols.exists(preNorm) Then
+                preCount = preCount + 1
+                srcIdxArr(preCount) = sourceCols(preNorm)
+            ElseIf sourceCols.exists(CStr(preColName)) Then
+                preCount = preCount + 1
+                srcIdxArr(preCount) = sourceCols(CStr(preColName))
+            End If
+        Next preColName
+        On Error Resume Next
+        fastKeyIdxs(preM, 1) = srcIdxArr
+        On Error GoTo 0
+        fastKeyColCounts(preM) = preCount
+
+        ' Resolve TARGET column indices for this match definition
+        preCount = 0
+        For Each preColName In matchDef("Columns")
+            preNorm = UltraNormalize(CStr(preColName))
+            If preNorm <> "" And targetCols.exists(preNorm) Then
+                preCount = preCount + 1
+            ElseIf targetCols.exists(CStr(preColName)) Then
+                preCount = preCount + 1
+            End If
+        Next preColName
+
+        ReDim tgtIdxArr(1 To IIf(preCount > 0, preCount, 1))
+        preCount = 0
+        For Each preColName In matchDef("Columns")
+            preNorm = UltraNormalize(CStr(preColName))
+            If preNorm <> "" And targetCols.exists(preNorm) Then
+                preCount = preCount + 1
+                tgtIdxArr(preCount) = targetCols(preNorm)
+            ElseIf targetCols.exists(CStr(preColName)) Then
+                preCount = preCount + 1
+                tgtIdxArr(preCount) = targetCols(CStr(preColName))
+            End If
+        Next preColName
+        On Error Resume Next
+        fastKeyIdxs(preM, 2) = tgtIdxArr
+        On Error GoTo 0
+    Next preM
 
     ' OPTIMIZATION: Pre-calculate values outside loop
     Dim sourceLastRow As Long
@@ -6332,23 +6400,28 @@ End Sub
 ' BuildKeyFast - Fast key builder using pre-resolved column index array
 ' Replaces BuildKeyFromRow for performance-critical loops
 '===============================================================================
-Private Function BuildKeyFast(data As Variant, rowIndex As Long, colIdxArr() As Long, colCount As Long) As String
+Private Function BuildKeyFast(data As Variant, rowIndex As Long, colIdxArr As Variant, colCount As Long) As String
     Dim parts() As String
     Dim partCount As Long
     Dim j As Long
     Dim val As String
     Dim result As String
+    Dim idxArr() As Long
 
     If colCount = 0 Then
         BuildKeyFast = ""
         Exit Function
     End If
 
+    On Error GoTo FallbackEmpty
+    idxArr = colIdxArr
+    On Error GoTo 0
+
     partCount = 0
     ReDim parts(1 To colCount)
 
     For j = 1 To colCount
-        val = SafeCleanString(data(rowIndex, colIdxArr(j)))
+        val = SafeCleanString(data(rowIndex, idxArr(j)))
         If val <> "" Then
             partCount = partCount + 1
             parts(partCount) = val
@@ -6366,6 +6439,10 @@ Private Function BuildKeyFast(data As Variant, rowIndex As Long, colIdxArr() As 
         Next j
         BuildKeyFast = result
     End If
+    Exit Function
+
+FallbackEmpty:
+    BuildKeyFast = ""
 End Function
 
 '===============================================================================
