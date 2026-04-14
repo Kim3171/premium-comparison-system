@@ -49,6 +49,9 @@ Public g_MatchedIdColumn As String    ' User-selected column whose value goes to
 Public g_UIExists As Boolean                ' Tracks if UI is already present
 Public g_DetectedUIExists As Boolean       ' Pre-detection result
 Public g_ParseCancelled As Boolean         ' Used by ParseRowSelection to signal cancellation
+Public g_StopRequested As Boolean           ' When True, cancels Execute Match mid-run
+Public g_MatchSummary As String        ' Stores match summary for display after progress form closes
+Private g_pb As ProgressBar
 
 '===============================================================================
 ' UI CONSTANTS
@@ -619,6 +622,8 @@ Public Sub CompareAssets()
     Dim wbNameConfigSheet As Worksheet
     Dim normalizedMatchCol As String
     Dim resolvedColIdx As Long
+    Dim srcFileDisplay As String
+    Dim tgtFileDisplay As String
 
     ' SAFE MODE GUARD - Block destructive operations in SafeMode
     If g_SafeMode Then
@@ -636,11 +641,22 @@ Public Sub CompareAssets()
     lastUpdateTime = startTime
     DebugPrint "CompareAssets: Starting..."
 
+    ' Show progress form
+    Set wbNameConfigSheet = GetOrCreateConfigSheet
+    srcFileDisplay = GetConfigValue(wbNameConfigSheet, "LOADED_SOURCE_FILE")
+    tgtFileDisplay = GetConfigValue(wbNameConfigSheet, "LOADED_TARGET_FILE")
+    If srcFileDisplay = "" Then srcFileDisplay = GetWorkbookName(g_SourceWorkbook)
+    If tgtFileDisplay = "" Then tgtFileDisplay = GetWorkbookName(g_TargetWorkbook)
+    Call CreateProgressForm(srcFileDisplay, tgtFileDisplay)
+
     ' Step 1: Get or configure source/target
-    Call ConfigureSourceTarget
+    ' Skip ConfigureSourceTarget if sheets already set by ExecuteCompareWithValidation
     If g_SourceSheet Is Nothing Or g_TargetSheet Is Nothing Then
-        MsgBox "Source and Target sheets must be selected.", vbCritical
-        Exit Sub
+        Call ConfigureSourceTarget
+        If g_SourceSheet Is Nothing Or g_TargetSheet Is Nothing Then
+            MsgBox "Source and Target sheets must be selected.", vbCritical
+            Exit Sub
+        End If
     End If
 
     ' Performance settings
@@ -893,9 +909,9 @@ Public Sub CompareAssets()
             End If
         Next m
 
-        ' OPTIMIZATION: Update status every 10000 rows instead of 50000 to show progress
-        If targetRow Mod 10000 = 0 Then
-            Application.StatusBar = "TARGET: " & Format(targetRow - 1, "#,##0") & " rows processed..."
+        If targetRow Mod 5000 = 0 Then
+            If g_StopRequested Then Exit For
+            Call UpdateProgress("Building TARGET lookup...", targetRow - 1, UBound(targetData, 1) - 1, 0, 0, Timer - startTime)
         End If
     Next targetRow
 
@@ -1044,13 +1060,18 @@ Public Sub CompareAssets()
 
         If Not matchFound Then noMatchCount = noMatchCount + 1
 
-        ' OPTIMIZATION: Update status every 10000 rows
+        ' OPTIMIZATION: Update status every 5000 rows
         processedRows = sourceRow - 1
-        If processedRows Mod 10000 = 0 Then
-            Application.StatusBar = "SOURCE: " & Format(processedRows, "#,##0") & " of " & Format(totalRows, "#,##0") & _
-                                  " (" & Format(processedRows / totalRows * 100, "0.0") & "%)"
+        If processedRows Mod 5000 = 0 Then
+            If g_StopRequested Then
+                noMatchCount = noMatchCount + (totalRows - processedRows)
+                Exit For
+            End If
+            Call UpdateProgress("Matching SOURCE rows...", processedRows, totalRows, _
+                processedRows - noMatchCount, noMatchCount, Timer - startTime)
         End If
     Next sourceRow
+    Call UpdateProgress("Matching SOURCE rows...", totalRows, totalRows, totalRows - noMatchCount, noMatchCount, Timer - startTime)
 
     ' Step 12: Write results to SOURCE sheet - write each column at its specific position
     Application.StatusBar = "Writing results to SOURCE sheet..."
@@ -1312,15 +1333,18 @@ Public Sub CompareAssets()
               "Time: " & Format(endTime - startTime, "0.0") & " seconds"
 
     DebugPrint "CompareAssets: COMPLETE - " & (processedRows - noMatchCount) & " matches found"
-    MsgBox summary, vbInformation, "Comparison Complete"
+    Call DestroyProgressForm
+    g_MatchSummary = summary
 
     Exit Sub
 
 ErrorHandler:
+    Call DestroyProgressForm
     MsgBox "Error: " & Err.Description & " (Error " & Err.Number & ")", vbCritical
     Resume CleanExit
 
 CleanExit:
+    Call DestroyProgressForm
     On Error Resume Next
     Call OptimizePerformance(False)
     Application.StatusBar = False
@@ -5087,6 +5111,8 @@ Public Sub ExecuteCompareWithValidation()
     Dim headerAliases As Object
     Dim tempLearned As Object
     Dim sourceCols As Object, targetCols As Object
+    Dim srcFile As String
+    Dim tgtFile As String
 
     g_MacroRunning = True
 
@@ -5225,8 +5251,17 @@ Public Sub ExecuteCompareWithValidation()
     End If
     g_MatchedIdColumn = returnCol
 
-    ' Run the comparison
-    Call CompareAssets
+    ' Run the comparison via progress form
+    Set configSheet = GetOrCreateConfigSheet
+    srcFile = GetConfigValue(configSheet, "LOADED_SOURCE_FILE")
+    tgtFile = GetConfigValue(configSheet, "LOADED_TARGET_FILE")
+    If srcFile = "" Then srcFile = GetWorkbookName(g_SourceWorkbook)
+    If tgtFile = "" Then tgtFile = GetWorkbookName(g_TargetWorkbook)
+    Call ShowProgressAndRun(srcFile, tgtFile)
+    If g_MatchSummary <> "" Then
+        MsgBox g_MatchSummary, vbInformation, "Comparison Complete"
+        g_MatchSummary = ""
+    End If
     GoTo CleanExit
 
 CleanExit:
@@ -7394,6 +7429,60 @@ Public Sub ToggleMacroEvents()
         On Error GoTo 0
         MsgBox "Macro events RESUMED. Double-click and change events are active again.", vbInformation, "Macro Resumed"
     End If
+End Sub
+
+'===============================================================================
+' PROGRESS DISPLAY — Uses RunMacro approach for background execution
+'===============================================================================
+
+Public Sub ShowProgressAndRun(sourceFile As String, targetFile As String)
+    On Error Resume Next
+    Set g_pb = New ProgressBar
+    With g_pb
+        .Caption = "Execute Match Progress"
+        .Info1 = "Initializing..."
+        .Info2 = "Source: " & sourceFile & "  |  Target: " & targetFile
+        .ShowTime = True
+        .AllowCancel = True
+        .BarColor = RGB(39, 174, 96)
+        .Width = 380
+        .CenterOnApplication
+        .ShowForm
+    End With
+    On Error GoTo 0
+
+    Call CompareAssets
+
+    Call DestroyProgressForm
+End Sub
+
+Public Sub UpdateProgress(phase As String, processedRows As Long, totalRows As Long, matchCount As Long, noMatchCount As Long, elapsedSecs As Double)
+    On Error Resume Next
+    Dim pct As Double
+    If totalRows > 0 Then pct = processedRows / totalRows Else pct = 0
+    If Not g_pb Is Nothing Then
+        g_pb.Info1 = phase
+        g_pb.Info2 = Format(processedRows, "#,##0") & "/" & Format(totalRows, "#,##0") & " | Matched: " & Format(matchCount, "#,##0") & " | No Match: " & Format(noMatchCount, "#,##0")
+        g_pb.Value = pct
+        If g_pb.WasCancelled Then g_StopRequested = True
+    End If
+    Application.StatusBar = phase & " | " & Format(processedRows, "#,##0") & "/" & Format(totalRows, "#,##0") & " (" & Format(pct * 100, "0.0") & "%)"
+    DoEvents
+    On Error GoTo 0
+End Sub
+
+Public Sub CreateProgressForm(sourceFile As String, targetFile As String)
+    ' Stub — progress form shown via ShowProgressAndRun
+End Sub
+
+Public Sub DestroyProgressForm()
+    On Error Resume Next
+    If Not g_pb Is Nothing Then
+        g_pb.HideForm
+        Set g_pb = Nothing
+    End If
+    Application.StatusBar = False
+    On Error GoTo 0
 End Sub
 
 '===============================================================================
