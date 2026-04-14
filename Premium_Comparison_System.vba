@@ -5017,12 +5017,12 @@ Private Sub AddControlButtonsFixed(ws As Worksheet)
     btn.Placement = xlFreeFloating
     fixedLeft = fixedLeft + btnWidth + 2
 
-    ' Button 8: Clear Data
+    ' Button 8: Clear Source
     btnWidth = 80
     Set btn = ws.Buttons.Add(fixedLeft, btnTop, btnWidth, btnHeight)
-    btn.Caption = "Clear Data"
-    btn.Name = "btnClearData"
-    btn.OnAction = "ClearAllData"
+    btn.Caption = "Clear Source"
+    btn.Name = "btnClearSource"
+    btn.OnAction = "ClearSourceData"
     btn.Font.Size = 11
     btn.Font.Color = RGB(180, 0, 0)
     btn.Font.Bold = True
@@ -5030,7 +5030,20 @@ Private Sub AddControlButtonsFixed(ws As Worksheet)
     btn.Placement = xlFreeFloating
     fixedLeft = fixedLeft + btnWidth + 2
 
-    ' Button 9: Build UI
+    ' Button 9: Clear Target
+    btnWidth = 80
+    Set btn = ws.Buttons.Add(fixedLeft, btnTop, btnWidth, btnHeight)
+    btn.Caption = "Clear Target"
+    btn.Name = "btnClearTarget"
+    btn.OnAction = "ClearTargetData"
+    btn.Font.Size = 11
+    btn.Font.Color = RGB(180, 0, 0)
+    btn.Font.Bold = True
+    Call SaveButtonAnchor(ws, btn)
+    btn.Placement = xlFreeFloating
+    fixedLeft = fixedLeft + btnWidth + 2
+
+    ' Button 10: Build UI
     btnWidth = 70
     Set btn = ws.Buttons.Add(fixedLeft, btnTop, btnWidth, btnHeight)
     btn.Caption = "Build UI"
@@ -5043,7 +5056,7 @@ Private Sub AddControlButtonsFixed(ws As Worksheet)
     btn.Placement = xlFreeFloating
     fixedLeft = fixedLeft + btnWidth + 2
 
-    ' Button 10: Pause Macro
+    ' Button 11: Pause Macro
     btnWidth = 80
     Set btn = ws.Buttons.Add(fixedLeft, btnTop, btnWidth, btnHeight)
     btn.Caption = "Pause Macro"
@@ -5053,7 +5066,7 @@ Private Sub AddControlButtonsFixed(ws As Worksheet)
     Call SaveButtonAnchor(ws, btn)
     btn.Placement = xlFreeFloating
 
-    DebugPrint "AddControlButtonsFixed: COMPLETE - Added 10 buttons"
+    DebugPrint "AddControlButtonsFixed: COMPLETE - Added 11 buttons"
 End Sub
 
 '===============================================================================
@@ -8062,6 +8075,7 @@ Public Sub ClearAllData()
     Dim lastDataCol As Long
     Dim nullLastRow As Long
     Dim nullConsecEmpty As Long
+    Dim clearConfigSheet As Worksheet
 
     ' Confirm before clearing
     response = MsgBox("This will clear all source data, target data, and reset match rules." & vbCrLf & vbCrLf & _
@@ -8189,6 +8203,14 @@ Public Sub ClearAllData()
     Call InitializeDatasetContext(ws)
     Call RebuildMatchBuilderUI
 
+    ' Reset Row 1/2 status display to default after clear
+    Set clearConfigSheet = GetOrCreateConfigSheet
+    Call SetConfigValue(clearConfigSheet, "LOADED_SOURCE_FILE", "")
+    Call SetConfigValue(clearConfigSheet, "LOADED_SOURCE_SHEET", "")
+    Call SetConfigValue(clearConfigSheet, "LOADED_TARGET_FILE", "")
+    Call SetConfigValue(clearConfigSheet, "LOADED_TARGET_SHEET", "")
+    Call AddStatusDisplayFixed(ws)
+
     Application.ScreenUpdating = True
     Application.EnableEvents = True
     MsgBox "All data cleared. Ready for new data.", vbInformation
@@ -8199,4 +8221,192 @@ ErrorHandler:
     Application.EnableEvents = True
     Application.DisplayAlerts = True
     MsgBox "Error clearing data: " & Err.Description, vbCritical
+End Sub
+
+'===============================================================================
+' ClearSourceData - Clear source data only (not target), reset source match rules
+'===============================================================================
+Public Sub ClearSourceData()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim scanRow As Long
+    Dim response As Integer
+    Dim clearDataCol As Long
+    Dim clearConsecEmpty As Long
+    Dim findCol As Long
+    Dim nullCol As Long
+    Dim lastDataCol As Long
+    Dim nullLastRow As Long
+    Dim nullConsecEmpty As Long
+    Dim clearConfigSheet As Worksheet
+
+    response = MsgBox("This will clear all source data." & vbCrLf & vbCrLf & _
+                      "Are you sure you want to continue?", vbYesNo + vbQuestion, "Clear Source Data")
+    If response = vbNo Then Exit Sub
+
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+
+    On Error GoTo ErrorHandler
+
+    Set ws = g_CurrentWorksheet
+    If ws Is Nothing Then Set ws = ActiveSheet
+
+    If g_DataHeaderRow = 0 Or Not g_Initialized Then
+        Call InitializeDatasetContext(ws)
+    End If
+
+    If g_DataHeaderRow > 0 Then
+        clearDataCol = 0
+        For findCol = 6 To 500
+            If Trim(CStr(ws.Cells(g_DataHeaderRow, findCol).Value)) <> "" Then
+                clearDataCol = findCol
+                Exit For
+            End If
+        Next findCol
+        lastRow = g_DataHeaderRow
+        If clearDataCol > 0 Then
+            clearConsecEmpty = 0
+            For scanRow = g_DataHeaderRow + 1 To g_DataHeaderRow + 500000
+                If scanRow > ws.Rows.Count Then Exit For
+                If Trim(CStr(ws.Cells(scanRow, clearDataCol).Value)) = "" Then
+                    clearConsecEmpty = clearConsecEmpty + 1
+                    If clearConsecEmpty >= 10 Then Exit For
+                Else
+                    clearConsecEmpty = 0
+                    lastRow = scanRow
+                End If
+            Next scanRow
+        End If
+        nullLastRow = g_DataHeaderRow
+        nullConsecEmpty = 0
+        For scanRow = g_DataHeaderRow + 1 To g_DataHeaderRow + 500000
+            If scanRow > ws.Rows.Count Then Exit For
+            If Trim(CStr(ws.Cells(scanRow, 2).Value)) = "" Then
+                nullConsecEmpty = nullConsecEmpty + 1
+                If nullConsecEmpty >= 10 Then Exit For
+            Else
+                nullConsecEmpty = 0
+                nullLastRow = scanRow
+            End If
+        Next scanRow
+        If nullLastRow > lastRow Then lastRow = nullLastRow
+
+        If lastRow > g_DataHeaderRow Then
+            Application.DisplayAlerts = False
+            ws.Range(ws.Rows(g_DataHeaderRow + 1), ws.Rows(lastRow)).ClearContents
+            ws.Range(ws.Rows(g_DataHeaderRow + 1), ws.Rows(lastRow)).ClearFormats
+            Application.DisplayAlerts = True
+        End If
+        With ws.Range(ws.Cells(g_DataHeaderRow + 1, 1), ws.Cells(g_DataHeaderRow + 1, 5))
+            .Interior.ColorIndex = xlNone
+            .Borders(xlEdgeTop).LineStyle = xlNone
+            .Borders(xlEdgeBottom).LineStyle = xlNone
+            .Borders(xlEdgeLeft).LineStyle = xlNone
+            .Borders(xlEdgeRight).LineStyle = xlNone
+        End With
+    End If
+
+    If g_DataHeaderRow > 0 Then
+        lastDataCol = 0
+        For nullCol = 6 To 500
+            If Trim(CStr(ws.Cells(g_DataHeaderRow, nullCol).Value)) <> "" Then
+                lastDataCol = nullCol
+            End If
+        Next nullCol
+        If lastDataCol >= 6 Then
+            For nullCol = 6 To lastDataCol
+                ws.Cells(g_DataHeaderRow, nullCol).Value = "~NULL~"
+            Next nullCol
+        End If
+    End If
+
+    g_ClearMatchDataOnRebuild = True
+    g_DataHeaderRow = 0
+    g_Initialized = False
+    Set g_SourceSheet = Nothing
+    Set g_SourceWorkbook = Nothing
+
+    Set clearConfigSheet = GetOrCreateConfigSheet
+    Call SetConfigValue(clearConfigSheet, "LOADED_SOURCE_FILE", "")
+    Call SetConfigValue(clearConfigSheet, "LOADED_SOURCE_SHEET", "")
+
+    Call InitializeDatasetContext(ws)
+    Call AddStatusDisplayFixed(ws)
+
+    Application.ScreenUpdating = True
+    Application.EnableEvents = True
+    MsgBox "Source data cleared.", vbInformation
+    Exit Sub
+
+ErrorHandler:
+    Application.ScreenUpdating = True
+    Application.EnableEvents = True
+    Application.DisplayAlerts = True
+    MsgBox "Error clearing source data: " & Err.Description, vbCritical
+End Sub
+
+'===============================================================================
+' ClearTargetData - Clear TARGET_DATA sheet only
+'===============================================================================
+Public Sub ClearTargetData()
+    Dim wsTarget As Worksheet
+    Dim scanRow As Long
+    Dim lastRow As Long
+    Dim response As Integer
+    Dim clearConfigSheet As Worksheet
+    Dim ws As Worksheet
+
+    response = MsgBox("This will clear all target data." & vbCrLf & vbCrLf & _
+                      "Are you sure?", vbYesNo + vbQuestion, "Clear Target Data")
+    If response = vbNo Then Exit Sub
+
+    Application.ScreenUpdating = False
+
+    On Error GoTo ErrorHandler
+
+    On Error Resume Next
+    Set wsTarget = ThisWorkbook.Worksheets("TARGET_DATA")
+    On Error GoTo ErrorHandler
+
+    If wsTarget Is Nothing Then
+        MsgBox "No TARGET_DATA sheet found.", vbInformation
+        Application.ScreenUpdating = True
+        Exit Sub
+    End If
+
+    lastRow = 0
+    For scanRow = 1 To 100000
+        If scanRow > wsTarget.Rows.Count Then Exit For
+        If Trim(CStr(wsTarget.Cells(scanRow, 1).Value)) <> "" Then
+            lastRow = scanRow
+        End If
+    Next scanRow
+
+    If lastRow > 0 Then
+        Application.DisplayAlerts = False
+        wsTarget.Range(wsTarget.Rows(1), wsTarget.Rows(lastRow)).ClearContents
+        wsTarget.Range(wsTarget.Rows(1), wsTarget.Rows(lastRow)).ClearFormats
+        Application.DisplayAlerts = True
+    End If
+
+    Set clearConfigSheet = GetOrCreateConfigSheet
+    Call SetConfigValue(clearConfigSheet, "LOADED_TARGET_FILE", "")
+    Call SetConfigValue(clearConfigSheet, "LOADED_TARGET_SHEET", "")
+
+    Set ws = g_CurrentWorksheet
+    If ws Is Nothing Then Set ws = ActiveSheet
+    If Not ws Is Nothing Then Call AddStatusDisplayFixed(ws)
+
+    Set g_TargetSheet = Nothing
+    Set g_TargetWorkbook = Nothing
+
+    Application.ScreenUpdating = True
+    MsgBox "Target data cleared.", vbInformation
+    Exit Sub
+
+ErrorHandler:
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    MsgBox "Error clearing target data: " & Err.Description, vbCritical
 End Sub
