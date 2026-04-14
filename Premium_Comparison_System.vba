@@ -616,6 +616,9 @@ Public Sub CompareAssets()
     Dim mDefCount As Long
     Dim srcIdxArr() As Long
     Dim tgtIdxArr() As Long
+    Dim wbNameConfigSheet As Worksheet
+    Dim normalizedMatchCol As String
+    Dim resolvedColIdx As Long
 
     ' SAFE MODE GUARD - Block destructive operations in SafeMode
     If g_SafeMode Then
@@ -916,8 +919,12 @@ Public Sub CompareAssets()
     ' Debug: show sample SOURCE keys
     DebugPrint "CompareAssets: Matching SOURCE rows..."
 
-    targetWorkbookName = GetWorkbookName(g_TargetWorkbook)
-    sourceWorkbookName = GetWorkbookName(g_SourceWorkbook)
+    ' Read actual loaded file names from config for SOURCE_FILE/TARGET_FILE columns
+    Set wbNameConfigSheet = GetOrCreateConfigSheet
+    targetWorkbookName = GetConfigValue(wbNameConfigSheet, "LOADED_TARGET_FILE")
+    sourceWorkbookName = GetConfigValue(wbNameConfigSheet, "LOADED_SOURCE_FILE")
+    If targetWorkbookName = "" Then targetWorkbookName = GetWorkbookName(g_TargetWorkbook)
+    If sourceWorkbookName = "" Then sourceWorkbookName = GetWorkbookName(g_SourceWorkbook)
 
     ' PRE-COMPUTE: Resolve column indices for each match definition
     ' Allows BuildKeyFast to replace BuildKeyFromRow in both loops
@@ -1240,8 +1247,17 @@ Public Sub CompareAssets()
     For targetRow = 2 To UBound(targetData, 1)
         ' Get target ASSETID
         ' Use user-selected column if specified, otherwise auto-detect
-        If g_MatchedIdColumn <> "" And targetCols.Exists(g_MatchedIdColumn) Then
-            targetKeyID = SafeCleanString(targetData(targetRow, targetCols(g_MatchedIdColumn)))
+        normalizedMatchCol = SmartMatch(g_MatchedIdColumn, UltraNormalize(g_MatchedIdColumn), Nothing, Nothing)
+        If normalizedMatchCol = "" Then normalizedMatchCol = g_MatchedIdColumn
+        If normalizedMatchCol <> "" And targetCols.Exists(normalizedMatchCol) Then
+            On Error Resume Next
+            resolvedColIdx = CLng(targetCols(normalizedMatchCol))
+            On Error GoTo ErrorHandler
+            If resolvedColIdx > 0 And resolvedColIdx <= UBound(targetData, 2) And targetRow <= UBound(targetData, 1) Then
+                targetKeyID = SafeCleanString(targetData(targetRow, resolvedColIdx))
+            Else
+                targetKeyID = GetKeyColumnValue(targetData, targetRow, targetCols)
+            End If
         Else
             targetKeyID = GetKeyColumnValue(targetData, targetRow, targetCols)
         End If
@@ -1695,6 +1711,17 @@ Private Sub SetConfigValue(ws As Worksheet, settingName As String, value As Stri
             Exit Sub
         End If
     Next i
+
+    ' Key not found — add it after the last used row
+    Dim lastRow As Long
+    lastRow = 0
+    For i = 1 To 200
+        If Trim(CStr(ws.Cells(i, 1).value)) <> "" Then
+            lastRow = i
+        End If
+    Next i
+    ws.Cells(lastRow + 1, 1).value = settingName
+    ws.Cells(lastRow + 1, 2).value = value
 End Sub
 
 '===============================================================================
@@ -2836,6 +2863,8 @@ Private Function GetKeyColumnValue(data As Variant, rowIndex As Long, colMap As 
     Dim maxColIdx As Long
     Dim foundColIdx As Long
 
+    On Error Resume Next
+
     ' Find the LEFTMOST data column (not result columns)
     ' This is likely the primary key column
     maxColIdx = 999999
@@ -2854,6 +2883,10 @@ Private Function GetKeyColumnValue(data As Variant, rowIndex As Long, colMap As 
 
     ' If we found a leftmost column, use it
     If foundColIdx < 999999 Then
+        If foundColIdx > UBound(data, 2) Or rowIndex > UBound(data, 1) Or rowIndex < 1 Then
+            GetKeyColumnValue = ""
+            Exit Function
+        End If
         foundValue = SafeCleanString(data(rowIndex, foundColIdx))
         If foundValue <> "" Then
             GetKeyColumnValue = foundValue
@@ -2888,6 +2921,7 @@ Private Function GetKeyColumnValue(data As Variant, rowIndex As Long, colMap As 
     Next colKey
 
     ' If still nothing found, return empty string
+    On Error GoTo 0
     GetKeyColumnValue = ""
 End Function
 
@@ -5206,13 +5240,25 @@ Private Sub AddStatusDisplayFixed(ws As Worksheet)
     Dim targetWB As Workbook
     Dim sourceActive As Boolean
     Dim targetActive As Boolean
+    Dim statusConfigSheet As Worksheet
+    Dim loadedSrcFile As String
+    Dim loadedSrcSheet As String
+    Dim loadedTgtFile As String
+    Dim loadedTgtSheet As String
 
     On Error Resume Next
     sourceActive = False
     targetActive = False
 
     ' Get source/target info from globals and config
-    If Not g_SourceSheet Is Nothing Then
+    Set statusConfigSheet = GetOrCreateConfigSheet
+    loadedSrcFile = GetConfigValue(statusConfigSheet, "LOADED_SOURCE_FILE")
+    loadedSrcSheet = GetConfigValue(statusConfigSheet, "LOADED_SOURCE_SHEET")
+    If loadedSrcFile <> "" And loadedSrcSheet <> "" Then
+        sourceName = loadedSrcSheet
+        sourceWBName = loadedSrcFile
+        sourceActive = True
+    ElseIf Not g_SourceSheet Is Nothing Then
         sourceName = g_SourceSheet.Name
         sourceWBName = g_SourceSheet.Parent.Name
         sourceActive = True
@@ -5221,7 +5267,13 @@ Private Sub AddStatusDisplayFixed(ws As Worksheet)
         sourceWBName = g_SourceWorkbook.Name
         sourceActive = True  ' Workbook exists, assume sheet might be there
     End If
-    If Not g_TargetSheet Is Nothing Then
+    loadedTgtFile = GetConfigValue(statusConfigSheet, "LOADED_TARGET_FILE")
+    loadedTgtSheet = GetConfigValue(statusConfigSheet, "LOADED_TARGET_SHEET")
+    If loadedTgtFile <> "" And loadedTgtSheet <> "" Then
+        targetName = loadedTgtSheet
+        targetWBName = loadedTgtFile
+        targetActive = True
+    ElseIf Not g_TargetSheet Is Nothing Then
         targetName = g_TargetSheet.Name
         targetWBName = g_TargetSheet.Parent.Name
         targetActive = True
@@ -7384,6 +7436,9 @@ Public Sub LoadSourceFile()
     Dim errNum As Long
     Dim errDesc As String
     Dim sourceData As Variant
+    Dim srcConfigSheet As Worksheet
+    Dim loadedSourceFileName As String
+    Dim loadedSourceSheetName As String
     Dim sourceLastRow As Long
     Dim sourceLastCol As Long
     Dim lastMatchRuleRow As Long
@@ -7449,6 +7504,8 @@ Public Sub LoadSourceFile()
     sourceData = selectedSourceSheet.UsedRange.Value
     sourceLastRow = selectedSourceSheet.UsedRange.Rows.Count
     sourceLastCol = selectedSourceSheet.UsedRange.Columns.Count
+    loadedSourceFileName = Mid(CStr(sourceFileName), InStrRev(CStr(sourceFileName), "\") + 1)
+    loadedSourceSheetName = selectedSourceSheet.Name
     sourceWB.Close SaveChanges:=False
     On Error GoTo 0
 
@@ -7649,6 +7706,10 @@ Public Sub LoadSourceFile()
     g_Initialized = False
     Call InitializeDatasetContext(ws)
     Call RebuildMatchBuilderUI
+    Set srcConfigSheet = GetOrCreateConfigSheet
+    Call SetConfigValue(srcConfigSheet, "LOADED_SOURCE_FILE", loadedSourceFileName)
+    Call SetConfigValue(srcConfigSheet, "LOADED_SOURCE_SHEET", loadedSourceSheetName)
+    Call AddStatusDisplayFixed(ws)
 
     Application.ScreenUpdating = True
     MsgBox "Source data loaded successfully.", vbInformation
@@ -7681,6 +7742,19 @@ Public Sub LoadTargetFile()
     Dim lastTargetCol As Long
     Dim tgtFmt As String
     Dim colFormats() As String
+    Dim loadedTargetFileName As String
+    Dim loadedTargetSheetName As String
+    Dim tgtConfigSheet As Worksheet
+    Dim hasData As Boolean
+    Dim configSheet As Worksheet
+    Dim wsStatus As Worksheet
+    Dim targetDataArr As Variant
+    Dim oldLastCol As Long
+    Dim oldLastRow As Long
+    Dim oldColScanRow As Long
+    Dim clearScanCol As Long
+    Dim oldScanCeiling As Long
+    Dim oldScanCol As Long
 
     Application.ScreenUpdating = False
     On Error GoTo ErrorHandler
@@ -7696,7 +7770,6 @@ Public Sub LoadTargetFile()
     End If
 
     ' Check if data already exists
-    Dim hasData As Boolean
     hasData = False
     For scanRow = 1 To 10
         If Trim(CStr(wsTarget.Cells(scanRow, 1).Value)) <> "" Then
@@ -7727,7 +7800,6 @@ Public Sub LoadTargetFile()
         Application.ScreenUpdating = True
         Exit Sub
     End If
-    selectedTargetSheet.UsedRange.Copy
 
     ' Capture number formats from target sheet before closing
     lastTargetCol = selectedTargetSheet.UsedRange.Columns.Count
@@ -7736,21 +7808,37 @@ Public Sub LoadTargetFile()
         colFormats(fmtCol) = selectedTargetSheet.Cells(2, fmtCol).NumberFormat
     Next fmtCol
 
-    ' Clear existing content
-    lastUsedRow = 0
-    For scanRow = 1 To 10000
-        If Trim(CStr(wsTarget.Cells(scanRow, 1).Value)) <> "" Then
-            lastUsedRow = scanRow
-        End If
-    Next scanRow
-
-    If lastUsedRow > 0 Then
-        wsTarget.Range(wsTarget.Rows(1), wsTarget.Rows(lastUsedRow)).ClearContents
+    ' Clear existing content — capture old dimensions before overwriting
+    oldLastCol = 0
+    oldLastRow = 0
+    For oldColScanRow = 1 To 5
+        For clearScanCol = 1 To 500
+            If Trim(CStr(wsTarget.Cells(oldColScanRow, clearScanCol).Value)) <> "" Then
+                If clearScanCol > oldLastCol Then oldLastCol = clearScanCol
+            End If
+        Next clearScanCol
+    Next oldColScanRow
+    On Error Resume Next
+    oldScanCeiling = wsTarget.UsedRange.Rows.Count + wsTarget.UsedRange.Row - 1
+    On Error GoTo ErrorHandler
+    If oldScanCeiling < 1 Then oldScanCeiling = 1
+    For oldScanCol = 1 To 10
+        For scanRow = 1 To oldScanCeiling
+            If Trim(CStr(wsTarget.Cells(scanRow, oldScanCol).Value)) <> "" Then
+                If scanRow > oldLastRow Then oldLastRow = scanRow
+            End If
+        Next scanRow
+    Next oldScanCol
+    If oldLastRow > 0 And oldLastCol > 0 Then
+        Application.DisplayAlerts = False
+        wsTarget.Range(wsTarget.Cells(1, 1), wsTarget.Cells(oldLastRow, oldLastCol)).ClearContents
+        wsTarget.Range(wsTarget.Cells(1, 1), wsTarget.Cells(oldLastRow, oldLastCol)).ClearFormats
+        Application.DisplayAlerts = True
     End If
 
-    ' Paste values only
-    wsTarget.Cells(1, 1).PasteSpecial xlPasteValues
-    Application.CutCopyMode = False
+    ' Write values directly from array (avoids clipboard being cleared by MsgBox)
+    targetDataArr = selectedTargetSheet.UsedRange.Value
+    wsTarget.Cells(1, 1).Resize(UBound(targetDataArr, 1), UBound(targetDataArr, 2)).Value = targetDataArr
 
     ' Apply captured number formats to target sheet columns
     For fmtCol = 1 To lastTargetCol
@@ -7761,13 +7849,19 @@ Public Sub LoadTargetFile()
     Next fmtCol
 
     ' Close target file without saving
+    loadedTargetFileName = Mid(CStr(targetFileName), InStrRev(CStr(targetFileName), "\") + 1)
+    loadedTargetSheetName = selectedTargetSheet.Name
     targetWB.Close SaveChanges:=False
 
     ' Save target sheet reference to config
-    Dim configSheet As Worksheet
     Set configSheet = GetOrCreateConfigSheet
     Call SetConfigValue(configSheet, CONFIG_TARGET_WB, ThisWorkbook.Name)
     Call SetConfigValue(configSheet, CONFIG_TARGET_WS, "TARGET_DATA")
+    Set tgtConfigSheet = GetOrCreateConfigSheet
+    Call SetConfigValue(tgtConfigSheet, "LOADED_TARGET_FILE", loadedTargetFileName)
+    Call SetConfigValue(tgtConfigSheet, "LOADED_TARGET_SHEET", loadedTargetSheetName)
+    Set wsStatus = g_CurrentWorksheet
+    If Not wsStatus Is Nothing Then Call AddStatusDisplayFixed(wsStatus)
 
     Application.ScreenUpdating = True
     MsgBox "Target data loaded successfully.", vbInformation
