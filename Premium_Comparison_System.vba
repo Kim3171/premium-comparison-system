@@ -7439,9 +7439,9 @@ Public Sub ShowProgressAndRun(sourceFile As String, targetFile As String)
     On Error Resume Next
     Set g_pb = New ProgressBar
     With g_pb
-        .Caption = "Execute Match Progress"
+        .Caption = "Execute Match  |  " & sourceFile & "  >>  " & targetFile
         .Info1 = "Initializing..."
-        .Info2 = "Source: " & sourceFile & "  |  Target: " & targetFile
+        .Info2 = ""
         .ShowTime = True
         .AllowCancel = True
         .BarColor = RGB(39, 174, 96)
@@ -7461,8 +7461,8 @@ Public Sub UpdateProgress(phase As String, processedRows As Long, totalRows As L
     Dim pct As Double
     If totalRows > 0 Then pct = processedRows / totalRows Else pct = 0
     If Not g_pb Is Nothing Then
-        g_pb.Info1 = phase
-        g_pb.Info2 = Format(processedRows, "#,##0") & "/" & Format(totalRows, "#,##0") & " | Matched: " & Format(matchCount, "#,##0") & " | No Match: " & Format(noMatchCount, "#,##0")
+        g_pb.Info1 = phase & "  (" & Format(processedRows, "#,##0") & " of " & Format(totalRows, "#,##0") & "  " & Format(pct * 100, "0.0") & "%)"
+        g_pb.Info2 = "Matched: " & Format(matchCount, "#,##0") & "  |  No Match: " & Format(noMatchCount, "#,##0")
         g_pb.Value = pct
         If g_pb.WasCancelled Then g_StopRequested = True
     End If
